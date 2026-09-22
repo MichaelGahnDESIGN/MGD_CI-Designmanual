@@ -79,6 +79,30 @@ function validUsername(string $value): bool {
 }
 
 /**
+ * Externe Bilder werden ausschließlich im Browser der Person geladen.
+ *
+ * Der Server speichert nur eine verschlüsselte HTTPS-Adresse und ruft sie nie
+ * selbst ab. Damit gibt es keinen Proxy, keine serverseitige Bildanalyse und
+ * kein SSRF-Risiko. Benutzername/Kennwort in einer URL sind nicht erlaubt.
+ */
+function externalImageUrl(string $value): string {
+    if ($value === '') return '';
+    if (strlen($value) > 2048 || preg_match('/[\x00-\x1F\x7F]/', $value)) {
+        respond(422, ['error' => 'invalid_external_image_url']);
+    }
+    $parts = parse_url($value);
+    if (!is_array($parts)
+        || ($parts['scheme'] ?? '') !== 'https'
+        || !is_string($parts['host'] ?? null)
+        || $parts['host'] === ''
+        || isset($parts['user'])
+        || isset($parts['pass'])) {
+        respond(422, ['error' => 'invalid_external_image_url']);
+    }
+    return $value;
+}
+
+/**
  * Liefert ausschließlich eine konfigurierte HTTPS-Adresse für Einmal-Links.
  * Der Token wird URL-kodiert und nie in Logs oder API-Antworten ausgegeben.
  */
@@ -388,7 +412,39 @@ if ($method === 'POST' && $path === '/auth/logout') {
 
 if ($method === 'GET' && $path === '/auth/me') {
     $session = authenticated($pdo, $config);
-    respond(200, ['user' => ['id' => uuidText($session['user_id']), 'must_change_password' => (bool) $session['must_change_password']]]);
+    $profile = $pdo->prepare('SELECT username_ciphertext, username_nonce, username_auth_tag, email_ciphertext, email_nonce, email_auth_tag FROM users WHERE id = ? LIMIT 1');
+    $profile->execute([$session['user_id']]);
+    $profileData = $profile->fetch();
+    if (!$profileData) respond(401, ['error' => 'unauthenticated']);
+
+    // Der Plan wird bis zur Stripe-Anbindung bewusst serverseitig als
+    // Freemium-Entitlement berechnet. Der Client darf nie Slots ableiten.
+    $slotStatement = $pdo->prepare('SELECT COUNT(*) FROM project_slot_grants WHERE user_id = ? AND revoked_at IS NULL');
+    $slotStatement->execute([$session['user_id']]);
+    $slotsTotal = (int) $slotStatement->fetchColumn();
+    $projectStatement = $pdo->prepare("SELECT COUNT(*) FROM projects WHERE owner_user_id = ? AND status != 'deleted'");
+    $projectStatement->execute([$session['user_id']]);
+    $projectsUsed = (int) $projectStatement->fetchColumn();
+    $storageStatement = $pdo->prepare("SELECT COALESCE(SUM(ma.byte_size), 0) FROM media_assets ma JOIN projects p ON p.id = ma.project_id WHERE p.owner_user_id = ? AND p.status != 'deleted' AND ma.deleted_at IS NULL");
+    $storageStatement->execute([$session['user_id']]);
+    $storageUsed = (int) $storageStatement->fetchColumn();
+    respond(200, [
+        'user' => [
+            'id' => uuidText($session['user_id']),
+            'username' => decryptValue($config, $profileData['username_ciphertext'], $profileData['username_nonce'], $profileData['username_auth_tag']),
+            'email' => decryptValue($config, $profileData['email_ciphertext'], $profileData['email_nonce'], $profileData['email_auth_tag']),
+            'must_change_password' => (bool) $session['must_change_password'],
+        ],
+        'plan' => [
+            'key' => 'free',
+            'label' => 'Kostenlos',
+            'projects_used' => $projectsUsed,
+            'projects_total' => $slotsTotal,
+            // Ein Slot umfasst derzeit 100 MB privaten Medien-Speicher.
+            'storage_used_bytes' => $storageUsed,
+            'storage_total_bytes' => max($slotsTotal, 1) * 100 * 1024 * 1024,
+        ],
+    ]);
 }
 
 if ($method === 'POST' && $path === '/auth/change-password') {
@@ -521,7 +577,7 @@ if ($method === 'POST' && $path === '/auth/delete-account') {
 
 if ($method === 'GET' && $path === '/projects') {
     $session = authenticated($pdo, $config);
-    $statement = $pdo->prepare("SELECT id, name_ciphertext, name_nonce, name_auth_tag, company_ciphertext, company_nonce, company_auth_tag, font_family, created_at FROM projects WHERE owner_user_id = ? AND status != 'deleted' ORDER BY created_at DESC");
+    $statement = $pdo->prepare("SELECT id, name_ciphertext, name_nonce, name_auth_tag, company_ciphertext, company_nonce, company_auth_tag, logo_external_url_ciphertext, logo_external_url_nonce, logo_external_url_auth_tag, reference_image_external_url_ciphertext, reference_image_external_url_nonce, reference_image_external_url_auth_tag, font_family, created_at FROM projects WHERE owner_user_id = ? AND status != 'deleted' ORDER BY created_at DESC");
     $statement->execute([$session['user_id']]);
     $projects = [];
     foreach ($statement as $row) {
@@ -529,6 +585,8 @@ if ($method === 'GET' && $path === '/projects') {
             'id' => uuidText($row['id']),
             'name' => decryptValue($config, $row['name_ciphertext'], $row['name_nonce'], $row['name_auth_tag']),
             'company' => $row['company_ciphertext'] === null ? null : decryptValue($config, $row['company_ciphertext'], $row['company_nonce'], $row['company_auth_tag']),
+            'logo_external_url' => $row['logo_external_url_ciphertext'] === null ? null : decryptValue($config, $row['logo_external_url_ciphertext'], $row['logo_external_url_nonce'], $row['logo_external_url_auth_tag']),
+            'reference_image_external_url' => $row['reference_image_external_url_ciphertext'] === null ? null : decryptValue($config, $row['reference_image_external_url_ciphertext'], $row['reference_image_external_url_nonce'], $row['reference_image_external_url_auth_tag']),
             'font_family' => $row['font_family'],
             'created_at' => $row['created_at'],
         ];
@@ -544,6 +602,8 @@ if ($method === 'POST' && $path === '/projects') {
     $company = text($body, 'company', 160);
     $description = text($body, 'description', 2000);
     $fontFamily = text($body, 'font_family', 80);
+    $logoExternalUrl = externalImageUrl(text($body, 'logo_external_url', 2048));
+    $referenceImageExternalUrl = externalImageUrl(text($body, 'reference_image_external_url', 2048));
     if ($name === '' || !in_array($fontFamily, ['Open Sans', 'Lato', 'Montserrat', 'Merriweather'], true)) {
         respond(422, ['error' => 'invalid_project']);
     }
@@ -553,18 +613,20 @@ if ($method === 'POST' && $path === '/projects') {
     [$nameCiphertext, $nameNonce, $nameTag] = encryptValue($config, $name);
     [$companyCiphertext, $companyNonce, $companyTag] = encryptValue($config, $company);
     [$descriptionCiphertext, $descriptionNonce, $descriptionTag] = encryptValue($config, $description);
+    [$logoUrlCiphertext, $logoUrlNonce, $logoUrlTag] = $logoExternalUrl === '' ? [null, null, null] : encryptValue($config, $logoExternalUrl);
+    [$referenceUrlCiphertext, $referenceUrlNonce, $referenceUrlTag] = $referenceImageExternalUrl === '' ? [null, null, null] : encryptValue($config, $referenceImageExternalUrl);
     $projectId = uuidV7();
     $pdo->beginTransaction();
     try {
-        $insert = $pdo->prepare("INSERT INTO projects (id, owner_user_id, name_ciphertext, name_nonce, name_auth_tag, company_ciphertext, company_nonce, company_auth_tag, description_ciphertext, description_nonce, description_auth_tag, font_family) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $insert->execute([$projectId, $session['user_id'], $nameCiphertext, $nameNonce, $nameTag, $companyCiphertext, $companyNonce, $companyTag, $descriptionCiphertext, $descriptionNonce, $descriptionTag, $fontFamily]);
+        $insert = $pdo->prepare("INSERT INTO projects (id, owner_user_id, name_ciphertext, name_nonce, name_auth_tag, company_ciphertext, company_nonce, company_auth_tag, description_ciphertext, description_nonce, description_auth_tag, logo_external_url_ciphertext, logo_external_url_nonce, logo_external_url_auth_tag, reference_image_external_url_ciphertext, reference_image_external_url_nonce, reference_image_external_url_auth_tag, font_family) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $insert->execute([$projectId, $session['user_id'], $nameCiphertext, $nameNonce, $nameTag, $companyCiphertext, $companyNonce, $companyTag, $descriptionCiphertext, $descriptionNonce, $descriptionTag, $logoUrlCiphertext, $logoUrlNonce, $logoUrlTag, $referenceUrlCiphertext, $referenceUrlNonce, $referenceUrlTag, $fontFamily]);
         $pdo->prepare("INSERT INTO project_members (project_id, user_id, membership_role) VALUES (?, ?, 'owner')")->execute([$projectId, $session['user_id']]);
         $pdo->commit();
     } catch (Throwable $error) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $error;
     }
-    respond(201, ['project' => ['id' => uuidText($projectId), 'name' => $name, 'company' => $company === '' ? null : $company, 'font_family' => $fontFamily, 'created_at' => gmdate('c')]]);
+    respond(201, ['project' => ['id' => uuidText($projectId), 'name' => $name, 'company' => $company === '' ? null : $company, 'logo_external_url' => $logoExternalUrl === '' ? null : $logoExternalUrl, 'reference_image_external_url' => $referenceImageExternalUrl === '' ? null : $referenceImageExternalUrl, 'font_family' => $fontFamily, 'created_at' => gmdate('c')]]);
 }
 
 if (preg_match('#^/projects/([0-9a-f-]{36})/media$#i', $path, $matches) && $method === 'GET') {

@@ -10,12 +10,14 @@ Der CI BUILDER ist eine Flutter-Webanwendung für Agenturen, Teams und Marken. E
 - Landingpage mit Dark- und Light-Mode; die Wahl wird lokal im Browser gespeichert
 - Registrierung, Login, Passwort-Änderung sowie rollenbasierte Administration
 - Ein kostenloser Projektplatz und ein geführter Einrichtungsassistent
-- Projektgrunddaten, optionale Logo- und Referenzbild-Auswahl mit Dateiprüfung
+- Projektgrunddaten sowie optionale private Uploads oder externe HTTPS-Bildreferenzen
 - Benutzergetrennte Projekt-Mediathek mit geschütztem API-Zugriff
+- Kontoansicht mit serverseitig berechneten Slots und Medienspeicher
+- informative Tarifübersicht für Slot+, Studio und Agentur; noch kein aktiver Kauf
 - Lokal ausgelieferte Open-Sans-Schrift und lokale Flutter-/CanvasKit-Ressourcen
 - Öffentliche Rechtstexte, Cookie-Einstellungen und kein externes Tracking
 
-Die nächsten Produktstufen sind der vollständige Manual-Editor, HTML-/PDF-Export, ein editierbarer Landingpage-Bereich für Administratoren und ein optionaler Funktions-Store ohne Abo-Modell.
+Die nächsten Produktstufen sind der vollständige Manual-Editor, HTML-/PDF-Export, ein editierbarer Landingpage-Bereich für Administratoren sowie eine Stripe-gesicherte Abrechnung für Einmalkäufe und optionale Tarife.
 
 ## Datenschutz und Sicherheit
 

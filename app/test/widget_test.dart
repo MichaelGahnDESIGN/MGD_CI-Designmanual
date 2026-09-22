@@ -86,6 +86,16 @@ void main() {
     expect(find.byIcon(Icons.light_mode_outlined), findsOneWidget);
   });
 
+  testWidgets('shows a dedicated theme control in the signed-in header', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: BuilderHome(csrfToken: 'test')),
+    );
+
+    expect(find.byKey(const Key('builder.themeToggle')), findsOneWidget);
+  });
+
   testWidgets('keeps the landing hierarchy compact on tablet viewports', (
     tester,
   ) async {
@@ -246,6 +256,51 @@ void main() {
     expect(find.text('Deine editierbare Ausgangsbasis.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('keeps the material step legible in dark mode', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.white,
+            brightness: Brightness.dark,
+          ),
+        ),
+        home: BuilderHome(
+          csrfToken: 'test',
+          assetPicker: _FakeBrandAssetPicker(null),
+          projectCreator: _testProjectCreator,
+        ),
+      ),
+    );
+    await _openMaterialStep(tester);
+
+    final uploadCards = find.descendant(
+      of: find.byKey(const Key('onboarding.logoUpload')),
+      matching: find.byType(Material),
+    );
+    expect(tester.widget<Material>(uploadCards).color, isNot(Colors.white));
+  });
+
+  testWidgets(
+    'offers HTTPS image URLs as a storage-free material alternative',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BuilderHome(
+            csrfToken: 'test',
+            assetPicker: _FakeBrandAssetPicker(null),
+            projectCreator: _testProjectCreator,
+          ),
+        ),
+      );
+      await _openMaterialStep(tester);
+
+      expect(find.byKey(const Key('onboarding.logoUrl')), findsOneWidget);
+      expect(find.textContaining('HTTPS-URL'), findsWidgets);
+    },
+  );
 }
 
 Future<void> _openMaterialStep(WidgetTester tester) async {

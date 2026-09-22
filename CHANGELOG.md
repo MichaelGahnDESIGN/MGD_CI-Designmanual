@@ -6,6 +6,11 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert. Das F
 
 ### Added
 
+- externe HTTPS-Bildreferenzen als verschlüsselte, speichersparende Alternative
+  zum privaten Markenmaterial-Upload; ohne serverseitigen Abruf oder Proxy
+- Kontoübersicht mit serverseitig berechneten Projektslots und Mediennutzung
+- informative Tarifübersicht für Extra-Slots, Studio und Agentur ohne
+  Kaufaktion oder Berechtigungsfreischaltung vor Stripe-Integration
 - Passwort-Reset über kurzlebige, einmal verwendbare und ausschließlich
   gehashte Tokens; bestehende Sitzungen werden nach einem Reset widerrufen
 - Konto- und Sicherheitsbereich mit Kennwortänderung und reauthentifizierter
@@ -44,6 +49,10 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert. Das F
 
 ### Changed
 
+- Assistent, Projekt-Mediathek und Workflow-Karten verwenden für Light- und
+  Darkmode ausschließlich semantische Theme-Farben; der eingeloggte Header hat
+  einen eigenen Theme-Schalter vor den Benachrichtigungen
+- Projektübersicht kennzeichnet gespeicherte externe Bildreferenzen
 - Theme-Schalter leitet Icon und Beschriftung nun immer aus dem tatsächlich
   aktiven Flutter-Theme ab; die lokale Auswahl bleibt gerätebezogen gespeichert
 - mobile Navigation rendert für „Konto“ einen eigenen Bereich statt des

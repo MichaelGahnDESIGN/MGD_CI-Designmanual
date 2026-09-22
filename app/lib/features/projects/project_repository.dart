@@ -10,6 +10,8 @@ class ProjectSummary {
     required this.name,
     required this.company,
     required this.fontFamily,
+    required this.logoExternalUrl,
+    required this.referenceImageExternalUrl,
     required this.createdAt,
   });
 
@@ -17,6 +19,8 @@ class ProjectSummary {
   final String name;
   final String? company;
   final String fontFamily;
+  final String? logoExternalUrl;
+  final String? referenceImageExternalUrl;
   final DateTime createdAt;
 
   factory ProjectSummary.fromJson(Map<String, dynamic> json) => ProjectSummary(
@@ -24,6 +28,8 @@ class ProjectSummary {
     name: json['name'] as String,
     company: json['company'] as String?,
     fontFamily: json['font_family'] as String? ?? 'Open Sans',
+    logoExternalUrl: json['logo_external_url'] as String?,
+    referenceImageExternalUrl: json['reference_image_external_url'] as String?,
     createdAt: DateTime.parse(json['created_at'] as String),
   );
 }
@@ -72,6 +78,8 @@ class ProjectRepository {
     required String company,
     required String description,
     required String fontFamily,
+    String logoExternalUrl = '',
+    String referenceImageExternalUrl = '',
   }) async {
     final response = await http.post(
       Uri.base.resolve('api/projects'),
@@ -81,9 +89,13 @@ class ProjectRepository {
         'company': company,
         'description': description,
         'font_family': fontFamily,
+        'logo_external_url': logoExternalUrl,
+        'reference_image_external_url': referenceImageExternalUrl,
       }),
     );
-    if (response.statusCode != 201) throw const ProjectApiException();
+    if (response.statusCode != 201) {
+      throw ProjectApiException(_errorCode(response));
+    }
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     return ProjectSummary.fromJson(body['project'] as Map<String, dynamic>);
   }
@@ -95,27 +107,36 @@ class ProjectRepository {
     required BrandAssetKind kind,
     required BrandAssetSelection selection,
   }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.base.resolve('api/projects/$projectId/media'),
-    )
-      ..headers['X-CSRF-Token'] = csrfToken
-      ..fields['kind'] = switch (kind) {
-        BrandAssetKind.logo => 'logo',
-        BrandAssetKind.referenceImage => 'reference_image',
-      }
-      ..files.add(http.MultipartFile.fromBytes(
-        'file',
-        selection.bytes,
-        filename: selection.name,
-      ));
+    final request =
+        http.MultipartRequest(
+            'POST',
+            Uri.base.resolve('api/projects/$projectId/media'),
+          )
+          ..headers['X-CSRF-Token'] = csrfToken
+          ..fields['kind'] = switch (kind) {
+            BrandAssetKind.logo => 'logo',
+            BrandAssetKind.referenceImage => 'reference_image',
+          }
+          ..files.add(
+            http.MultipartFile.fromBytes(
+              'file',
+              selection.bytes,
+              filename: selection.name,
+            ),
+          );
     final response = await request.send();
-    if (response.statusCode != 201) throw const ProjectApiException();
+    if (response.statusCode != 201) {
+      throw ProjectApiException(_errorCode(response));
+    }
   }
 
   Future<List<MediaAsset>> listAssets(String projectId) async {
-    final response = await http.get(Uri.base.resolve('api/projects/$projectId/media'));
-    if (response.statusCode != 200) throw const ProjectApiException();
+    final response = await http.get(
+      Uri.base.resolve('api/projects/$projectId/media'),
+    );
+    if (response.statusCode != 200) {
+      throw ProjectApiException(_errorCode(response));
+    }
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     return (body['assets'] as List<dynamic>)
         .cast<Map<String, dynamic>>()
@@ -128,10 +149,24 @@ class ProjectRepository {
       Uri.base.resolve('api/projects/$projectId/media/$assetId'),
       headers: {'X-CSRF-Token': csrfToken},
     );
-    if (response.statusCode != 204) throw const ProjectApiException();
+    if (response.statusCode != 204) {
+      throw ProjectApiException(_errorCode(response));
+    }
   }
 }
 
 class ProjectApiException implements Exception {
-  const ProjectApiException();
+  const ProjectApiException([this.code]);
+
+  final String? code;
+}
+
+String? _errorCode(http.BaseResponse response) {
+  if (response is! http.Response || response.body.isEmpty) return null;
+  try {
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['error'] as String?;
+  } catch (_) {
+    return null;
+  }
 }

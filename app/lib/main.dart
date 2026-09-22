@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import 'features/account/account_page.dart';
 import 'features/auth/password_reset_pages.dart';
+import 'features/billing/upgrade_offer_sheet.dart';
 import 'features/editor/typography/typography_selector.dart';
 import 'features/landing/landing_layout.dart';
 import 'features/legal/cookie_consent.dart';
@@ -89,6 +90,10 @@ class _CiBuilderAppState extends State<CiBuilderApp> {
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
       themeMode: _themeMode,
+      builder: (context, child) => ThemeToggleScope(
+        onThemeToggle: _toggleTheme,
+        child: child ?? const SizedBox.shrink(),
+      ),
       initialRoute: LegalDocumentContent.fromUri(Uri.base)?.route ?? '/',
       onGenerateRoute: _route,
     );
@@ -185,8 +190,45 @@ class _CiBuilderAppState extends State<CiBuilderApp> {
           borderSide: BorderSide(color: ink, width: 2),
         ),
       ),
+      cardTheme: CardThemeData(
+        color: dark ? const Color(0xFF24242A) : const Color(0xFFFFFEFC),
+        surfaceTintColor: Colors.transparent,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surface,
+        indicatorColor: dark
+            ? const Color(0xFF3B3A42)
+            : const Color(0xFFE7E5E1),
+      ),
     );
   }
+}
+
+/// Stellt den globalen Theme-Wechsel allen Routen zur Verfügung.
+///
+/// Login, Assistent und Konto werden als eigene Routen geöffnet. Ein Callback
+/// über diese Scope-Ebene vermeidet einen zweiten, nicht synchronen Theme-State
+/// in jeder Route und hält die lokale Nutzerpräferenz an einer Stelle.
+class ThemeToggleScope extends InheritedWidget {
+  const ThemeToggleScope({
+    super.key,
+    required this.onThemeToggle,
+    required super.child,
+  });
+
+  final VoidCallback onThemeToggle;
+
+  static VoidCallback? maybeOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<ThemeToggleScope>()
+      ?.onThemeToggle;
+
+  @override
+  bool updateShouldNotify(ThemeToggleScope oldWidget) =>
+      onThemeToggle != oldWidget.onThemeToggle;
 }
 
 /// Authentifizierungsflächen verwenden ausschließlich semantische Themefarben.
@@ -1055,6 +1097,8 @@ class _BuilderHomeState extends State<BuilderHome> {
   bool _loadingProjects = true;
   BrandAssetSelection? _logo;
   BrandAssetSelection? _referenceImage;
+  String _logoExternalUrl = '';
+  String _referenceImageExternalUrl = '';
 
   @override
   void initState() {
@@ -1077,7 +1121,15 @@ class _BuilderHomeState extends State<BuilderHome> {
                 padding: EdgeInsets.all(wide ? 32 : 20),
                 child: Column(
                   children: [
-                    _TopBar(onMenu: () {}),
+                    _TopBar(
+                      onMenu: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Du hast keine neuen Benachrichtigungen.',
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 28),
                     Expanded(
                       child: SingleChildScrollView(
@@ -1092,6 +1144,9 @@ class _BuilderHomeState extends State<BuilderHome> {
                             ? _AssistantWorkspace(
                                 logo: _logo,
                                 referenceImage: _referenceImage,
+                                logoExternalUrl: _logoExternalUrl,
+                                referenceImageExternalUrl:
+                                    _referenceImageExternalUrl,
                                 onAddMaterial: () =>
                                     _openAssistant(initialStep: 1),
                               )
@@ -1153,13 +1208,28 @@ class _BuilderHomeState extends State<BuilderHome> {
         initialStep: initialStep,
         initialLogo: _logo,
         initialReferenceImage: _referenceImage,
+        initialLogoExternalUrl: _logoExternalUrl,
+        initialReferenceImageExternalUrl: _referenceImageExternalUrl,
         onCreateProject: _createProject,
         onMaterialChanged: (kind, selection) {
           setState(() {
             if (kind == BrandAssetKind.logo) {
               _logo = selection;
+              if (selection != null) _logoExternalUrl = '';
             } else {
               _referenceImage = selection;
+              if (selection != null) _referenceImageExternalUrl = '';
+            }
+          });
+        },
+        onExternalUrlChanged: (kind, value) {
+          setState(() {
+            if (kind == BrandAssetKind.logo) {
+              _logoExternalUrl = value;
+              if (value.isNotEmpty) _logo = null;
+            } else {
+              _referenceImageExternalUrl = value;
+              if (value.isNotEmpty) _referenceImage = null;
             }
           });
         },
@@ -1198,6 +1268,8 @@ class _BuilderHomeState extends State<BuilderHome> {
       company: company,
       description: description,
       fontFamily: fontFamily,
+      logoExternalUrl: _logoExternalUrl,
+      referenceImageExternalUrl: _referenceImageExternalUrl,
     );
     // Erst nach der Projektanlage existiert die serverseitige Berechtigung.
     // Upload-Fehler werden an den Assistenten zurückgegeben; die Datei bleibt
@@ -1216,7 +1288,17 @@ class _BuilderHomeState extends State<BuilderHome> {
         selection: _referenceImage!,
       );
     }
-    if (mounted) setState(() => _projectList = [project, ..._projectList]);
+    if (mounted) {
+      setState(() {
+        _projectList = [project, ..._projectList];
+        // Die Assistenten-Auswahl gehört nur zum gerade angelegten Projekt.
+        // So wird Material nicht unbeabsichtigt in ein Folgeprojekt übernommen.
+        _logo = null;
+        _referenceImage = null;
+        _logoExternalUrl = '';
+        _referenceImageExternalUrl = '';
+      });
+    }
   }
 
   void _openMedia(ProjectSummary project) {
@@ -1406,32 +1488,44 @@ class _TopBar extends StatelessWidget {
   final VoidCallback onMenu;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: Text(
-          'Guten Morgen, Michael.',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-      ),
-      IconButton(
-        onPressed: onMenu,
-        icon: const Icon(Icons.notifications_none_rounded),
-      ),
-      const SizedBox(width: 8),
-      const CircleAvatar(
-        backgroundColor: Color(0xFF111114),
-        child: Text(
-          'MG',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Guten Morgen, Michael.',
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
         ),
-      ),
-    ],
-  );
+        IconButton(
+          key: const Key('builder.themeToggle'),
+          onPressed: ThemeToggleScope.maybeOf(context),
+          tooltip: dark ? 'Lightmode aktivieren' : 'Darkmode aktivieren',
+          icon: Icon(
+            dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+          ),
+        ),
+        IconButton(
+          onPressed: onMenu,
+          tooltip: 'Benachrichtigungen',
+          icon: const Icon(Icons.notifications_none_rounded),
+        ),
+        const SizedBox(width: 8),
+        const CircleAvatar(
+          backgroundColor: Color(0xFF111114),
+          child: Text(
+            'MG',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _Dashboard extends StatelessWidget {
@@ -1475,14 +1569,20 @@ class _Dashboard extends StatelessWidget {
         const SizedBox(height: 28),
         Text('Deine Projekte', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
-        ...projects.map(
-          (project) => Card(
+        ...projects.map((project) {
+          final hasExternalImage =
+              project.logoExternalUrl != null ||
+              project.referenceImageExternalUrl != null;
+          final foundation = project.company?.isEmpty ?? true
+              ? project.fontFamily
+              : '${project.company} · ${project.fontFamily}';
+          return Card(
             child: ListTile(
               title: Text(project.name),
               subtitle: Text(
-                project.company?.isEmpty ?? true
-                    ? project.fontFamily
-                    : '${project.company} · ${project.fontFamily}',
+                hasExternalImage
+                    ? '$foundation · Externes Bild eingebettet'
+                    : foundation,
               ),
               leading: const Icon(Icons.folder_open_outlined),
               trailing: IconButton(
@@ -1491,8 +1591,8 @@ class _Dashboard extends StatelessWidget {
                 icon: const Icon(Icons.perm_media_outlined),
               ),
             ),
-          ),
-        ),
+          );
+        }),
       ],
       const SizedBox(height: 32),
       Text('Dein Workflow', style: Theme.of(context).textTheme.titleLarge),
@@ -1625,141 +1725,144 @@ class _ProjectMediaSheetState extends State<_ProjectMediaSheet> {
     initialChildSize: .72,
     minChildSize: .48,
     maxChildSize: .92,
-    builder: (context, controller) => Container(
-      padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFDFCFB),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 42,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD4D1D9),
-              borderRadius: BorderRadius.circular(2),
+    builder: (context, controller) {
+      final colors = Theme.of(context).colorScheme;
+      return Container(
+        padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colors.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Mediathek',
-                      style: Theme.of(context).textTheme.headlineSmall,
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mediathek',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      Text(
+                        widget.project.name,
+                        style: TextStyle(color: colors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<BrandAssetKind>(
+                  enabled: !_uploading,
+                  onSelected: _add,
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: BrandAssetKind.logo,
+                      child: Text('Logo hochladen'),
                     ),
-                    Text(
-                      widget.project.name,
-                      style: const TextStyle(color: Color(0xFF686670)),
+                    PopupMenuItem(
+                      value: BrandAssetKind.referenceImage,
+                      child: Text('Bild hochladen'),
                     ),
                   ],
+                  icon: _uploading
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add_photo_alternate_outlined),
                 ),
-              ),
-              PopupMenuButton<BrandAssetKind>(
-                enabled: !_uploading,
-                onSelected: _add,
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: BrandAssetKind.logo,
-                    child: Text('Logo hochladen'),
-                  ),
-                  PopupMenuItem(
-                    value: BrandAssetKind.referenceImage,
-                    child: Text('Bild hochladen'),
-                  ),
-                ],
-                icon: _uploading
-                    ? const SizedBox.square(
-                        dimension: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.add_photo_alternate_outlined),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _assets.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Noch keine privaten Medien in diesem Projekt.',
-                    ),
-                  )
-                : GridView.builder(
-                    controller: controller,
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 180,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: .9,
-                        ),
-                    itemCount: _assets.length,
-                    itemBuilder: (context, index) {
-                      final asset = _assets[index];
-                      return Card(
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Image.network(
-                                Uri.base.resolve(asset.contentUrl).toString(),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => const Center(
-                                  child: Icon(Icons.broken_image_outlined),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _assets.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Noch keine privaten Medien in diesem Projekt.',
+                      ),
+                    )
+                  : GridView.builder(
+                      controller: controller,
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 180,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: .9,
+                          ),
+                      itemCount: _assets.length,
+                      itemBuilder: (context, index) {
+                        final asset = _assets[index];
+                        return Card(
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Image.network(
+                                  Uri.base.resolve(asset.contentUrl).toString(),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => const Center(
+                                    child: Icon(Icons.broken_image_outlined),
+                                  ),
                                 ),
                               ),
-                            ),
-                            Positioned(
-                              left: 8,
-                              bottom: 8,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: Colors.black87,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 4,
+                              Positioned(
+                                left: 8,
+                                bottom: 8,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black87,
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Text(
-                                    asset.kind == 'logo' ? 'Logo' : 'Bild',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 4,
+                                    ),
+                                    child: Text(
+                                      asset.kind == 'logo' ? 'Logo' : 'Bild',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                            Positioned(
-                              right: 2,
-                              top: 2,
-                              child: IconButton(
-                                onPressed: () => _delete(asset),
-                                icon: const Icon(Icons.delete_outline),
-                                color: Colors.white,
-                                style: IconButton.styleFrom(
-                                  backgroundColor: Colors.black54,
+                              Positioned(
+                                right: 2,
+                                top: 2,
+                                child: IconButton(
+                                  onPressed: () => _delete(asset),
+                                  icon: const Icon(Icons.delete_outline),
+                                  color: Colors.white,
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Colors.black54,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      );
+    },
   );
 }
 
@@ -1841,54 +1944,61 @@ class _WorkflowCard extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: 250,
-    padding: const EdgeInsets.all(19),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              number,
-              style: const TextStyle(
-                color: Color(0xFF8F8D96),
-                fontWeight: FontWeight.w800,
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: 250,
+      padding: const EdgeInsets.all(19),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                number,
+                style: TextStyle(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            Icon(icon, color: const Color(0xFF111114)),
-          ],
-        ),
-        const SizedBox(height: 28),
-        Text(title, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 7),
-        Text(
-          text,
-          style: const TextStyle(
-            color: Color(0xFF686670),
-            height: 1.45,
-            fontSize: 13,
+              Icon(icon, color: colors.onSurface),
+            ],
           ),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(height: 28),
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 7),
+          Text(
+            text,
+            style: TextStyle(
+              color: colors.onSurfaceVariant,
+              height: 1.45,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _AssistantWorkspace extends StatelessWidget {
   const _AssistantWorkspace({
     required this.logo,
     required this.referenceImage,
+    required this.logoExternalUrl,
+    required this.referenceImageExternalUrl,
     required this.onAddMaterial,
   });
 
   final BrandAssetSelection? logo;
   final BrandAssetSelection? referenceImage;
+  final String logoExternalUrl;
+  final String referenceImageExternalUrl;
   final VoidCallback onAddMaterial;
 
   @override
@@ -1909,12 +2019,20 @@ class _AssistantWorkspace extends StatelessWidget {
               'Logo und Referenzbilder sind optional. Du kannst sie jederzeit hier ergänzen oder ersetzen.',
             ),
             const SizedBox(height: 24),
-            if (logo != null || referenceImage != null) ...[
-              _MaterialStatusRow(label: 'Logo', selection: logo),
+            if (logo != null ||
+                referenceImage != null ||
+                logoExternalUrl.isNotEmpty ||
+                referenceImageExternalUrl.isNotEmpty) ...[
+              _MaterialStatusRow(
+                label: 'Logo',
+                selection: logo,
+                externalUrl: logoExternalUrl,
+              ),
               const SizedBox(height: 8),
               _MaterialStatusRow(
                 label: 'Referenzbild',
                 selection: referenceImage,
+                externalUrl: referenceImageExternalUrl,
               ),
               const SizedBox(height: 20),
             ],
@@ -1923,7 +2041,10 @@ class _AssistantWorkspace extends StatelessWidget {
               onPressed: onAddMaterial,
               icon: const Icon(Icons.add_photo_alternate_outlined),
               label: Text(
-                logo == null && referenceImage == null
+                logo == null &&
+                        referenceImage == null &&
+                        logoExternalUrl.isEmpty &&
+                        referenceImageExternalUrl.isEmpty
                     ? 'Markenmaterial ergänzen'
                     : 'Markenmaterial verwalten',
               ),
@@ -1936,10 +2057,15 @@ class _AssistantWorkspace extends StatelessWidget {
 }
 
 class _MaterialStatusRow extends StatelessWidget {
-  const _MaterialStatusRow({required this.label, required this.selection});
+  const _MaterialStatusRow({
+    required this.label,
+    required this.selection,
+    required this.externalUrl,
+  });
 
   final String label;
   final BrandAssetSelection? selection;
+  final String externalUrl;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -1951,7 +2077,11 @@ class _MaterialStatusRow extends StatelessWidget {
       const SizedBox(width: 9),
       Expanded(
         child: Text(
-          selection == null ? '$label noch nicht ausgewählt' : selection!.name,
+          selection != null
+              ? selection!.name
+              : externalUrl.isNotEmpty
+              ? '$label über HTTPS-URL eingebettet'
+              : '$label noch nicht ausgewählt',
         ),
       ),
     ],
@@ -1964,7 +2094,10 @@ class _NewProjectSheet extends StatefulWidget {
     required this.initialStep,
     required this.initialLogo,
     required this.initialReferenceImage,
+    required this.initialLogoExternalUrl,
+    required this.initialReferenceImageExternalUrl,
     required this.onMaterialChanged,
+    required this.onExternalUrlChanged,
     required this.onCreateProject,
   });
 
@@ -1972,7 +2105,10 @@ class _NewProjectSheet extends StatefulWidget {
   final int initialStep;
   final BrandAssetSelection? initialLogo;
   final BrandAssetSelection? initialReferenceImage;
+  final String initialLogoExternalUrl;
+  final String initialReferenceImageExternalUrl;
   final void Function(BrandAssetKind, BrandAssetSelection?) onMaterialChanged;
+  final void Function(BrandAssetKind, String) onExternalUrlChanged;
   final Future<void> Function({
     required String name,
     required String company,
@@ -1993,6 +2129,8 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
   late int _step;
   late BrandAssetSelection? _logo;
   late BrandAssetSelection? _referenceImage;
+  late final TextEditingController _logoUrlController;
+  late final TextEditingController _referenceImageUrlController;
   BrandAssetKind? _pickingKind;
   bool _creating = false;
 
@@ -2002,6 +2140,12 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
     _step = widget.initialStep;
     _logo = widget.initialLogo;
     _referenceImage = widget.initialReferenceImage;
+    _logoUrlController = TextEditingController(
+      text: widget.initialLogoExternalUrl,
+    );
+    _referenceImageUrlController = TextEditingController(
+      text: widget.initialReferenceImageExternalUrl,
+    );
   }
 
   @override
@@ -2009,6 +2153,8 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
     _projectController.dispose();
     _companyController.dispose();
     _descriptionController.dispose();
+    _logoUrlController.dispose();
+    _referenceImageUrlController.dispose();
     super.dispose();
   }
 
@@ -2017,72 +2163,75 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
     initialChildSize: .78,
     minChildSize: .55,
     maxChildSize: .92,
-    builder: (context, controller) => Container(
-      padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFDFCFB),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        children: [
-          Center(
-            child: Container(
-              width: 42,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD4D1D9),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 22),
-          _AssistantProgress(step: _step),
-          const SizedBox(height: 24),
-          Expanded(
-            child: ListView(
-              controller: controller,
-              children: [_buildStep(context)],
-            ),
-          ),
-          const SizedBox(height: 18),
-          if (_step == 1) ...[
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                key: const Key('onboarding.skipMaterial'),
-                onPressed: () => setState(() => _step = 2),
-                child: const Text('Jetzt überspringen'),
-              ),
-            ),
-            const SizedBox(height: 6),
-          ],
-          Row(
-            children: [
-              if (_step > 0)
-                OutlinedButton(
-                  onPressed: () => setState(() => _step -= 1),
-                  child: const Text('Zurück'),
+    builder: (context, controller) {
+      final colors = Theme.of(context).colorScheme;
+      return Container(
+        padding: const EdgeInsets.fromLTRB(28, 14, 28, 28),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              if (_step > 0) const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _creating ? null : _continue,
-                  child: Text(
-                    _creating
-                        ? 'Projekt wird gespeichert …'
-                        : _step == 2
-                        ? widget.initialStep == 1
-                              ? 'Material übernehmen'
-                              : 'Projektbasis erstellen'
-                        : 'Weiter',
+              ),
+            ),
+            const SizedBox(height: 22),
+            _AssistantProgress(step: _step),
+            const SizedBox(height: 24),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                children: [_buildStep(context)],
+              ),
+            ),
+            const SizedBox(height: 18),
+            if (_step == 1) ...[
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  key: const Key('onboarding.skipMaterial'),
+                  onPressed: () => setState(() => _step = 2),
+                  child: const Text('Jetzt überspringen'),
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+            Row(
+              children: [
+                if (_step > 0)
+                  OutlinedButton(
+                    onPressed: () => setState(() => _step -= 1),
+                    child: const Text('Zurück'),
+                  ),
+                if (_step > 0) const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _creating ? null : _continue,
+                    child: Text(
+                      _creating
+                          ? 'Projekt wird gespeichert …'
+                          : _step == 2
+                          ? widget.initialStep == 1
+                                ? 'Material übernehmen'
+                                : 'Projektbasis erstellen'
+                          : 'Weiter',
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
   );
 
   Widget _buildStep(BuildContext context) {
@@ -2147,6 +2296,14 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
               loading: _pickingKind == BrandAssetKind.logo,
               onPressed: () => _pickAsset(BrandAssetKind.logo),
             ),
+            const SizedBox(height: 10),
+            _ExternalImageUrlField(
+              key: const Key('onboarding.logoUrl'),
+              label: 'Oder Logo per HTTPS-URL einbetten',
+              controller: _logoUrlController,
+              onChanged: (value) =>
+                  widget.onExternalUrlChanged(BrandAssetKind.logo, value),
+            ),
             const SizedBox(height: 14),
             _UploadHint(
               key: const Key('onboarding.referenceUpload'),
@@ -2157,22 +2314,35 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
               loading: _pickingKind == BrandAssetKind.referenceImage,
               onPressed: () => _pickAsset(BrandAssetKind.referenceImage),
             ),
+            const SizedBox(height: 10),
+            _ExternalImageUrlField(
+              key: const Key('onboarding.referenceImageUrl'),
+              label: 'Oder Referenzbild per HTTPS-URL einbetten',
+              controller: _referenceImageUrlController,
+              onChanged: (value) => widget.onExternalUrlChanged(
+                BrandAssetKind.referenceImage,
+                value,
+              ),
+            ),
             const SizedBox(height: 22),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F0F0),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(15),
               ),
-              child: const Row(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.lock_outline_rounded, color: Color(0xFF111114)),
-                  SizedBox(width: 12),
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Nach der Projektanlage werden Bilder verschlüsselt referenziert und ausschließlich über deine geschützte Projekt-Mediathek bereitgestellt.',
-                      style: TextStyle(height: 1.4),
+                      'Lokale Uploads liegen geschützt in deiner Projekt-Mediathek. HTTPS-URLs werden nicht kopiert und direkt beim jeweiligen Bildanbieter geladen.',
+                      style: const TextStyle(height: 1.4),
                     ),
                   ),
                 ],
@@ -2238,12 +2408,8 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
     }
   }
 
-  InputDecoration _inputDecoration(String hint) => InputDecoration(
-    hintText: hint,
-    filled: true,
-    fillColor: Colors.white,
-    border: const OutlineInputBorder(),
-  );
+  InputDecoration _inputDecoration(String hint) =>
+      InputDecoration(hintText: hint, border: const OutlineInputBorder());
 
   Future<void> _continue() async {
     if (_step == 0 && _projectController.text.trim().isEmpty) {
@@ -2284,15 +2450,19 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
           ),
         ),
       );
-    } on ProjectApiException {
+    } on ProjectApiException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Projekt konnte nicht gespeichert werden. Bitte versuche es später erneut.',
+        if (error.code == 'project_slot_limit') {
+          await UpgradeOfferSheet.show(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Projekt konnte nicht gespeichert werden. Bitte versuche es später erneut.',
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _creating = false);
@@ -2333,46 +2503,79 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
   }
 }
 
+/// Alternativer, speichersparender Bildweg. Die URL wird im Projekt
+/// verschlüsselt gespeichert; der Server lädt sie nie selbst und wird dadurch
+/// nicht zu einem SSRF-Proxy. Nur HTTPS ist zugelassen.
+class _ExternalImageUrlField extends StatelessWidget {
+  const _ExternalImageUrlField({
+    super.key,
+    required this.label,
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    controller: controller,
+    keyboardType: TextInputType.url,
+    autocorrect: false,
+    enableSuggestions: false,
+    onChanged: onChanged,
+    decoration: InputDecoration(
+      labelText: label,
+      hintText: 'https://beispiel.de/bild.webp',
+      helperText:
+          'Keine Kopie auf unserem Server · nur öffentliche HTTPS-Bilder',
+      prefixIcon: const Icon(Icons.link_rounded),
+    ),
+  );
+}
+
 class _AssistantProgress extends StatelessWidget {
   const _AssistantProgress({required this.step});
   final int step;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: List.generate(
-      3,
-      (index) => Expanded(
-        child: Padding(
-          padding: EdgeInsets.only(right: index == 2 ? 0 : 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${index + 1}. ${['Grundlage', 'Material', 'Start'][index]}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: index <= step
-                      ? const Color(0xFF111114)
-                      : const Color(0xFF96939C),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: List.generate(
+        3,
+        (index) => Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: index == 2 ? 0 : 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${index + 1}. ${['Grundlage', 'Material', 'Start'][index]}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: index <= step ? colors.onSurface : colors.outline,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 7),
-              Container(
-                height: 4,
-                decoration: BoxDecoration(
-                  color: index <= step
-                      ? const Color(0xFF111114)
-                      : const Color(0xFFE3E0E7),
-                  borderRadius: BorderRadius.circular(4),
+                const SizedBox(height: 7),
+                Container(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: index <= step
+                        ? colors.onSurface
+                        : colors.outlineVariant,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _UploadHint extends StatelessWidget {
@@ -2393,78 +2596,87 @@ class _UploadHint extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: selection == null ? title : '${selection!.name} ersetzen',
-    child: Material(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: selection == null
-              ? const Color(0xFFD9D6DF)
-              : const Color(0xFF111114),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: selection == null ? title : '${selection!.name} ersetzen',
+      child: Material(
+        color: colors.surfaceContainerHighest,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(
+            color: selection == null ? colors.outlineVariant : colors.onSurface,
+          ),
+          borderRadius: BorderRadius.circular(14),
         ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: InkWell(
-        onTap: loading ? null : onPressed,
-        borderRadius: BorderRadius.circular(14),
-        child: SizedBox(
-          height: 100,
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                Icon(icon, color: const Color(0xFF111114)),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        selection?.name ?? title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        selection == null ? subtitle : 'Zum Ersetzen anklicken',
-                        style: const TextStyle(
-                          color: Color(0xFF686670),
-                          fontSize: 12,
+        child: InkWell(
+          onTap: loading ? null : onPressed,
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(
+            height: 100,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  Icon(icon, color: colors.onSurface),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          selection?.name ?? title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.onSurface,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 3),
+                        Text(
+                          selection == null
+                              ? subtitle
+                              : 'Zum Ersetzen anklicken',
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                if (loading)
-                  const SizedBox.square(
-                    dimension: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else if (selection != null)
-                  const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Ausgewählt',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.check_circle, color: Color(0xFF111114)),
-                    ],
-                  )
-                else
-                  const Icon(Icons.add_rounded, color: Color(0xFF111114)),
-              ],
+                  if (loading)
+                    const SizedBox.square(
+                      dimension: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else if (selection != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Ausgewählt',
+                          style: TextStyle(
+                            color: colors.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.check_circle, color: colors.onSurface),
+                      ],
+                    )
+                  else
+                    Icon(Icons.add_rounded, color: colors.onSurface),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _ColorSwatch extends StatelessWidget {

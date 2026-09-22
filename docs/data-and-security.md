@@ -24,20 +24,28 @@ Alle fachlichen Entitäten erhalten eine serverseitig erzeugte, nicht erratbare 
 
 Dateien liegen außerhalb des Webroots oder in privatem Object Storage. Der Server gibt sie nur nach einer Rechteprüfung aus; direkte Dateipfade werden nie als Berechtigung verwendet.
 
-## Aktueller Stand der Materialauswahl
+## Material: privater Upload oder externe Referenz
 
-Der Einrichtungsassistent kann Logo- und Referenzdateien bereits lokal im
-Browser auswählen und vorab nach Dateiendung und Größe prüfen. In diesem
-Zwischenstand werden nur Dateimetadaten für die laufende Sitzung vorgemerkt;
-es findet noch kein dauerhafter Upload statt. Das verhindert, dass die
-Oberfläche eine vermeintlich sichere Speicherung verspricht, bevor der private
-Upload-Endpunkt mit Projektberechtigung, Signaturprüfung und sicherem Storage
-fertiggestellt ist.
+Der Einrichtungsassistent bietet zwei bewusst getrennte Wege. Beide sind
+optional und können übersprungen werden.
 
-Die dauerhafte Speicherung wird erst aktiviert, wenn serverseitig mindestens
-Projektmitgliedschaft, tatsächlicher MIME-Typ, Größenlimit, nicht ausführbare
-Auslieferung und privater Speicher geprüft sind. Der optionale Schritt darf
-übersprungen und später erneut geöffnet werden.
+- **Privater Upload:** Erst nach der Projektanlage lädt der Browser das Logo
+  oder Bild über die Same-Origin-API hoch. Der Server prüft Session,
+  CSRF-Token, Projektrolle, tatsächlichen Bildtyp, höchstens 10 MB und maximal
+  8.000 Pixel Kantenlänge. Die Datei liegt außerhalb des Webroots und wird nur
+  nach erneuter Projektberechtigungsprüfung ausgeliefert. Serverpfade, Storage-
+  Keys und Zugangsdaten erscheinen nie im Client.
+- **Externe HTTPS-Referenz:** Für speichersparende, bereits öffentliche Bilder
+  speichert der Server nur die verschlüsselte URL. Er lädt das Bild niemals
+  selbst; dadurch gibt es keinen SSRF- oder Abruf-Proxy. URLs mit anderer
+  Schematik oder Zugangsdaten werden abgewiesen. Beim Öffnen des Manuals ruft
+  der Browser das Bild direkt beim jeweiligen Anbieter ab. Deshalb darf dieser
+  Weg nur für bewusst öffentliche Inhalte genutzt werden; der Anbieter kann
+  dabei die IP-Adresse der betrachtenden Person erhalten.
+
+Die Auswahl im Assistenten wird beim Anlegen des Projekts gespeichert. Nach
+dem Speichern wird die temporäre Browserauswahl geleert, damit Material nicht
+versehentlich in ein weiteres Projekt übernommen wird.
 
 ## Verschlüsselung und Hashing
 
@@ -91,3 +99,8 @@ Für CI BUILDER heißt das: private Projekte standardmäßig privat, keine Analy
 ## Stripe später
 
 Für Einmalkäufe verwenden wir Stripe Checkout, damit Kartendaten direkt bei Stripe verarbeitet werden und nicht durch App oder Server fließen. Stripe verlangt trotzdem eine eigene PCI-Betrachtung; der Server verifiziert jede Webhook-Signatur und schreibt Entitlements erst nach bestätigtem Ereignis. [Stripe Security Guide](https://docs.stripe.com/security/guide) · [Stripe Webhook-Signaturen](https://docs.stripe.com/webhooks/signature)
+
+Abonnements und Einmal-Slots bleiben bis zu Stripe-Testmodus, Preis-IDs,
+signierter Webhook-Prüfung, idempotenter Event-Verarbeitung und
+Erstattungslogik deaktiviert. Die aktuelle Tarifansicht löst daher weder eine
+Zahlung noch eine Berechtigungsänderung aus.
