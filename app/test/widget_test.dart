@@ -38,6 +38,54 @@ void main() {
     expect(find.text('Entwurf'), findsNothing);
   });
 
+  testWidgets('offers a password reset entry from the login form', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: LoginPage(darkMode: false)),
+    );
+
+    expect(find.text('Passwort vergessen?'), findsOneWidget);
+    await tester.tap(find.text('Passwort vergessen?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kennwort zurücksetzen.'), findsOneWidget);
+  });
+
+  testWidgets('opens the account and security area from mobile navigation', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(home: BuilderHome(csrfToken: 'test')),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Konto'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Konto & Sicherheit'), findsOneWidget);
+    expect(find.text('Kennwort ändern'), findsOneWidget);
+  });
+
+  testWidgets('theme button reflects the active brightness after toggling', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const CiBuilderApp());
+
+    await tester.tap(find.byKey(const Key('landing.themeToggle')));
+    await tester.pumpAndSettle();
+
+    expect(
+      Theme.of(tester.element(find.byType(LandingPage))).brightness,
+      Brightness.dark,
+    );
+    expect(find.byIcon(Icons.light_mode_outlined), findsOneWidget);
+  });
+
   testWidgets('keeps the landing hierarchy compact on tablet viewports', (
     tester,
   ) async {
@@ -112,7 +160,7 @@ void main() {
     tester,
   ) async {
     final picker = _FakeBrandAssetPicker(
-      const BrandAssetSelection(
+      BrandAssetSelection(
         name: 'marke.svg',
         sizeBytes: 4200,
         mimeType: 'image/svg+xml',
@@ -121,7 +169,13 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: BuilderHome(csrfToken: 'test', assetPicker: picker, projectCreator: _testProjectCreator)),
+      MaterialApp(
+        home: BuilderHome(
+          csrfToken: 'test',
+          assetPicker: picker,
+          projectCreator: _testProjectCreator,
+        ),
+      ),
     );
     await _openMaterialStep(tester);
 
@@ -139,7 +193,13 @@ void main() {
     final picker = _FakeBrandAssetPicker(null);
 
     await tester.pumpWidget(
-      MaterialApp(home: BuilderHome(csrfToken: 'test', assetPicker: picker, projectCreator: _testProjectCreator)),
+      MaterialApp(
+        home: BuilderHome(
+          csrfToken: 'test',
+          assetPicker: picker,
+          projectCreator: _testProjectCreator,
+        ),
+      ),
     );
     await _openMaterialStep(tester);
 
@@ -167,7 +227,13 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      MaterialApp(home: BuilderHome(csrfToken: 'test', assetPicker: _FakeBrandAssetPicker(null), projectCreator: _testProjectCreator)),
+      MaterialApp(
+        home: BuilderHome(
+          csrfToken: 'test',
+          assetPicker: _FakeBrandAssetPicker(null),
+          projectCreator: _testProjectCreator,
+        ),
+      ),
     );
     await _openMaterialStep(tester);
 
@@ -192,7 +258,12 @@ Future<void> _openMaterialStep(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _testProjectCreator({required String name, required String company, required String description, required String fontFamily}) async {}
+Future<void> _testProjectCreator({
+  required String name,
+  required String company,
+  required String description,
+  required String fontFamily,
+}) async {}
 
 class _FakeBrandAssetPicker implements BrandAssetPicker {
   _FakeBrandAssetPicker(this.result);

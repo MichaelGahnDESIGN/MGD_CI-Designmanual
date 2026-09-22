@@ -6,6 +6,10 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert. Das F
 
 ### Added
 
+- Passwort-Reset über kurzlebige, einmal verwendbare und ausschließlich
+  gehashte Tokens; bestehende Sitzungen werden nach einem Reset widerrufen
+- Konto- und Sicherheitsbereich mit Kennwortänderung und reauthentifizierter
+  Kontolöschung inklusive projekt- und medienbezogenem Rückbau
 - öffentlicher Produktstatus in README und Wiki: Live-Funktionen,
   Datenschutz-Kurzfassung und nächste Ausbaustufen
 
@@ -40,6 +44,10 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert. Das F
 
 ### Changed
 
+- Theme-Schalter leitet Icon und Beschriftung nun immer aus dem tatsächlich
+  aktiven Flutter-Theme ab; die lokale Auswahl bleibt gerätebezogen gespeichert
+- mobile Navigation rendert für „Konto“ einen eigenen Bereich statt des
+  Projektassistenten
 - Landingpage für Tablet- und Smartphone-Breiten neu skaliert: obere
   Ausrichtung, ruhigere Open-Sans-Typografie, lesbarere Zeilenhöhe und kompakte
   Vorteilsliste

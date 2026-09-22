@@ -78,6 +78,39 @@ function validUsername(string $value): bool {
     return (bool) preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,39}$/', $value);
 }
 
+/**
+ * Liefert ausschließlich eine konfigurierte HTTPS-Adresse für Einmal-Links.
+ * Der Token wird URL-kodiert und nie in Logs oder API-Antworten ausgegeben.
+ */
+function passwordResetUrl(array $config, string $token): string {
+    $base = (string) ($config['app']['public_base_url'] ?? 'https://ci.michael-gahn.de');
+    if (!filter_var($base, FILTER_VALIDATE_URL) || !str_starts_with($base, 'https://')) {
+        throw new RuntimeException('Invalid public base URL');
+    }
+    return rtrim($base, '/') . '/?reset=' . rawurlencode($token);
+}
+
+/**
+ * E-Mail ist bewusst nur ein Transportweg. Die Entscheidung, ob ein Konto
+ * existiert, wird niemals an den Browser zurückgegeben.
+ */
+function sendPasswordResetMail(array $config, string $recipient, string $token): bool {
+    $from = (string) ($config['mail']['from'] ?? 'no-reply@ci.michael-gahn.de');
+    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL) || !filter_var($from, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+    $url = passwordResetUrl($config, $token);
+    $subject = 'CI BUILDER – Kennwort zurücksetzen';
+    $message = "Hallo,\n\n" .
+        "für dein CI BUILDER Konto wurde ein Kennwort-Reset angefordert.\n" .
+        "Öffne innerhalb von 30 Minuten diesen Link:\n" . $url . "\n\n" .
+        "Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail ignorieren.\n";
+    $headers = "From: CI BUILDER <{$from}>\r\n" .
+        "Content-Type: text/plain; charset=UTF-8\r\n" .
+        "X-Content-Type-Options: nosniff";
+    return function_exists('mail') && @mail($recipient, $subject, $message, $headers);
+}
+
 function requestIp(): string {
     return (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
 }
@@ -375,6 +408,73 @@ if ($method === 'POST' && $path === '/auth/change-password') {
     }
     $pdo->prepare('UPDATE users SET password_hash = ?, password_changed_at = UTC_TIMESTAMP(6), must_change_password = 0 WHERE id = ?')->execute([password_hash($next, PASSWORD_ARGON2ID), $session['user_id']]);
     respond(200, ['status' => 'password_changed']);
+}
+
+if ($method === 'POST' && $path === '/auth/request-password-reset') {
+    $body = requestBody();
+    $email = text($body, 'email', 320);
+    // Rate-Limits schützen unabhängig vom Kontostatus vor Missbrauch.
+    enforceRateLimit($pdo, $config, 'password-reset-ip', requestIp(), 3, 15);
+    if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        enforceRateLimit($pdo, $config, 'password-reset-email', $email, 3, 30);
+        $statement = $pdo->prepare("SELECT id, email_ciphertext, email_nonce, email_auth_tag FROM users WHERE email_lookup_hash = ? AND status = 'active' LIMIT 1");
+        $statement->execute([lookupHash($config, $email)]);
+        $user = $statement->fetch();
+        if ($user) {
+            $token = bin2hex(random_bytes(32));
+            $tokenHash = lookupHash($config, $token);
+            $pdo->beginTransaction();
+            try {
+                // Pro Konto ist nur der zuletzt ausgestellte Link gültig.
+                $pdo->prepare("UPDATE auth_one_time_tokens SET consumed_at = UTC_TIMESTAMP(6) WHERE user_id = ? AND purpose = 'password_reset' AND consumed_at IS NULL")
+                    ->execute([$user['id']]);
+                $insert = $pdo->prepare("INSERT INTO auth_one_time_tokens (id, user_id, purpose, token_hash, expires_at) VALUES (?, ?, 'password_reset', ?, DATE_ADD(UTC_TIMESTAMP(6), INTERVAL 30 MINUTE))");
+                $insert->execute([uuidV7(), $user['id'], $tokenHash]);
+                $recipient = decryptValue($config, $user['email_ciphertext'], $user['email_nonce'], $user['email_auth_tag']);
+                if (!sendPasswordResetMail($config, $recipient, $token)) {
+                    throw new RuntimeException('Password reset mail unavailable');
+                }
+                $pdo->commit();
+            } catch (Throwable $error) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                // Die API bleibt absichtlich generisch, damit kein Kontostatus
+                // oder Mail-Transportdetail als Information preisgegeben wird.
+            }
+        }
+    }
+    respond(202, ['status' => 'password_reset_requested']);
+}
+
+if ($method === 'POST' && $path === '/auth/reset-password') {
+    $body = requestBody();
+    $token = text($body, 'token', 128);
+    $next = text($body, 'new_password', 1024);
+    enforceRateLimit($pdo, $config, 'password-reset-confirm-ip', requestIp(), 8, 15);
+    if (!preg_match('/^[a-f0-9]{64}$/', $token) || !validPassword($next)) {
+        respond(422, ['error' => 'invalid_reset']);
+    }
+    $pdo->beginTransaction();
+    try {
+        $statement = $pdo->prepare("SELECT id, user_id FROM auth_one_time_tokens WHERE purpose = 'password_reset' AND token_hash = ? AND consumed_at IS NULL AND expires_at > UTC_TIMESTAMP(6) LIMIT 1 FOR UPDATE");
+        $statement->execute([lookupHash($config, $token)]);
+        $reset = $statement->fetch();
+        if (!$reset) {
+            $pdo->rollBack();
+            respond(422, ['error' => 'invalid_reset']);
+        }
+        $pdo->prepare('UPDATE users SET password_hash = ?, password_changed_at = UTC_TIMESTAMP(6), must_change_password = 0 WHERE id = ?')
+            ->execute([password_hash($next, PASSWORD_ARGON2ID), $reset['user_id']]);
+        $pdo->prepare('UPDATE auth_one_time_tokens SET consumed_at = UTC_TIMESTAMP(6) WHERE id = ?')
+            ->execute([$reset['id']]);
+        // Ein Reset beendet alle existierenden Sitzungen; neue Anmeldung ist nötig.
+        $pdo->prepare('UPDATE auth_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE user_id = ? AND revoked_at IS NULL')
+            ->execute([$reset['user_id']]);
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $error;
+    }
+    respond(200, ['status' => 'password_reset']);
 }
 
 if ($method === 'POST' && $path === '/auth/delete-account') {

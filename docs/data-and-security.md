@@ -60,6 +60,16 @@ Schlüsselrotation wird von Anfang an ermöglicht: verschlüsselte Daten tragen 
 - Jede private API serverseitig mit Account- und Rollenprüfung absichern; Adminrechte niemals aus einem Flutter-Flag ableiten.
 - Login, Reset, Referral und Export rate-limitieren; Audit-Events datensparsam und manipulationsarm erfassen.
 
+### Kennwort-Reset
+
+Der Reset-Antrag antwortet unabhängig vom Kontostatus gleich, um keine
+E-Mail-Adressen zu bestätigen. Für existierende aktive Konten wird ein
+kryptographisch zufälliger Token erzeugt, nur als HMAC-Hash gespeichert und
+nach 30 Minuten oder der ersten Verwendung ungültig. Ein erfolgreicher Reset
+widerruft alle bestehenden Sitzungen. Der Link selbst gehört ausschließlich in
+eine E-Mail; weder Token noch Zieladresse erscheinen in Browserantworten oder
+Anwendungslogs.
+
 ## Sichere Live-Migration
 
 Die erste Migration wird idempotent und in einer `schema_migrations`-Tabelle protokolliert. Vor dem ersten produktiven Lauf gelten: verschlüsseltes Backup, lesender Verbindungscheck, dry-run der Migration, dokumentierter Rückweg und ausdrückliche Freigabe. Es werden keine Testkonten oder Beispieldaten in der Live-Datenbank angelegt.

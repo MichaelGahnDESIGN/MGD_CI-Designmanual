@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'features/account/account_page.dart';
+import 'features/auth/password_reset_pages.dart';
 import 'features/editor/typography/typography_selector.dart';
 import 'features/landing/landing_layout.dart';
 import 'features/legal/cookie_consent.dart';
@@ -74,8 +76,9 @@ class CiBuilderApp extends StatefulWidget {
 }
 
 class _CiBuilderAppState extends State<CiBuilderApp> {
-  ThemeMode _themeMode =
-      loadDarkModePreference() ? ThemeMode.dark : ThemeMode.light;
+  ThemeMode _themeMode = loadDarkModePreference()
+      ? ThemeMode.dark
+      : ThemeMode.light;
   AppLanguage _language = AppLanguage.de;
 
   @override
@@ -92,6 +95,13 @@ class _CiBuilderAppState extends State<CiBuilderApp> {
   }
 
   Route<void> _route(RouteSettings settings) {
+    final resetToken = Uri.base.queryParameters['reset'];
+    if (resetToken != null && resetToken.isNotEmpty) {
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => PasswordResetConfirmPage(token: resetToken),
+      );
+    }
     final document = LegalDocumentContent.fromRoute(settings.name);
     return MaterialPageRoute<void>(
       settings: settings,
@@ -100,7 +110,6 @@ class _CiBuilderAppState extends State<CiBuilderApp> {
               language: _language,
               onLanguageChanged: (value) => setState(() => _language = value),
               onThemeToggle: _toggleTheme,
-              darkMode: _themeMode == ThemeMode.dark,
             )
           : LegalPage(
               document: document,
@@ -222,17 +231,18 @@ class LandingPage extends StatelessWidget {
     required this.language,
     required this.onLanguageChanged,
     required this.onThemeToggle,
-    required this.darkMode,
   });
 
   final AppLanguage language;
   final ValueChanged<AppLanguage> onLanguageChanged;
   final VoidCallback onThemeToggle;
-  final bool darkMode;
 
   @override
   Widget build(BuildContext context) {
     final copy = language == AppLanguage.de ? LandingCopy.de : LandingCopy.en;
+    // Die Theme-Farbe stammt immer aus dem aktiven Inherited Theme. Damit
+    // aktualisiert sich Icon und Tooltip auch innerhalb einer bestehenden Route.
+    final darkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Stack(
         children: [
@@ -300,6 +310,7 @@ class LandingPage extends StatelessWidget {
                                   ),
                                 ],
                                 IconButton(
+                                  key: const Key('landing.themeToggle'),
                                   onPressed: onThemeToggle,
                                   tooltip: darkMode ? 'Lightmode' : 'Darkmode',
                                   icon: Icon(
@@ -406,17 +417,16 @@ class LandingPage extends StatelessWidget {
     );
   }
 
-  void _openLogin(BuildContext context) =>
-      Navigator.of(context)
-          .push(MaterialPageRoute<void>(
-            // Die Route selbst bleibt beim Themewechsel bestehen. Deshalb wird
-            // der Modus erst beim Klick aus dem aktuell sichtbaren Theme gelesen.
-            builder: (_) => LoginPage(
-              darkMode: Theme.of(context).scaffoldBackgroundColor
-                      .computeLuminance() <
-                  .1,
-            ),
-          ));
+  void _openLogin(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      // Die Route selbst bleibt beim Themewechsel bestehen. Deshalb wird
+      // der Modus erst beim Klick aus dem aktuell sichtbaren Theme gelesen.
+      builder: (_) => LoginPage(
+        darkMode:
+            Theme.of(context).scaffoldBackgroundColor.computeLuminance() < .1,
+      ),
+    ),
+  );
 }
 
 class _LandingBenefit extends StatelessWidget {
@@ -460,7 +470,8 @@ class _LandingExplainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final german = language == AppLanguage.de;
-    final dark = Theme.of(context).scaffoldBackgroundColor.computeLuminance() < .1;
+    final dark =
+        Theme.of(context).scaffoldBackgroundColor.computeLuminance() < .1;
     final cards = german
         ? const [
             _ExplainerCardData(
@@ -504,7 +515,9 @@ class _LandingExplainer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            german ? 'Was du mit dem CI BUILDER machst.' : 'What CI BUILDER helps you create.',
+            german
+                ? 'Was du mit dem CI BUILDER machst.'
+                : 'What CI BUILDER helps you create.',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 10),
@@ -661,11 +674,25 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 14),
                 TextButton(
+                  key: const Key('auth.forgotPassword'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PasswordResetRequestPage(),
+                    ),
+                  ),
+                  child: const Text('Passwort vergessen?'),
+                ),
+                TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Zurück zur Startseite'),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => RegistrationPage(darkMode: widget.darkMode))),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          RegistrationPage(darkMode: widget.darkMode),
+                    ),
+                  ),
                   child: const Text('Kostenloses Konto erstellen'),
                 ),
               ],
@@ -740,42 +767,138 @@ class _RegistrationPageState extends State<RegistrationPage> {
   String? _error;
 
   @override
-  void dispose() { _username.dispose(); _email.dispose(); _password.dispose(); super.dispose(); }
+  void dispose() {
+    _username.dispose();
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
 
   @override
-  Widget build(BuildContext context) => Scaffold(body: SafeArea(child: Center(child: SingleChildScrollView(child: Container(
-    width: 440, margin: const EdgeInsets.all(24), padding: const EdgeInsets.all(30),
-    decoration: _authCardDecoration(widget.darkMode),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const CiBrandMark(), const SizedBox(height: 36), Text('Konto erstellen.', style: Theme.of(context).textTheme.headlineMedium),
-      const SizedBox(height: 8), const Text('Ein kostenloser Projektslot ist inklusive.'), const SizedBox(height: 22),
-      const _FormLabel('Benutzername'), TextField(controller: _username, autocorrect: false, decoration: _authInputDecoration(dark: widget.darkMode)),
-      const SizedBox(height: 14), const _FormLabel('E-Mail-Adresse'), TextField(controller: _email, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: _authInputDecoration(dark: widget.darkMode)),
-      const SizedBox(height: 14), const _FormLabel('Kennwort'), TextField(controller: _password, obscureText: true, decoration: _authInputDecoration(dark: widget.darkMode, hintText: 'Mindestens 14 Zeichen, Groß-/Kleinbuchstabe, Zahl')),
-      if (_error != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(_error!, style: const TextStyle(color: Color(0xFF8D0000)))),
-      const SizedBox(height: 22), SizedBox(width: double.infinity, child: FilledButton(onPressed: _sending ? null : _register, child: Text(_sending ? 'Konto wird erstellt …' : 'Konto sicher erstellen'))),
-      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Zurück zur Anmeldung')),
-    ]),
-  )))));
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          child: Container(
+            width: 440,
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(30),
+            decoration: _authCardDecoration(widget.darkMode),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const CiBrandMark(),
+                const SizedBox(height: 36),
+                Text(
+                  'Konto erstellen.',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 8),
+                const Text('Ein kostenloser Projektslot ist inklusive.'),
+                const SizedBox(height: 22),
+                const _FormLabel('Benutzername'),
+                TextField(
+                  controller: _username,
+                  autocorrect: false,
+                  decoration: _authInputDecoration(dark: widget.darkMode),
+                ),
+                const SizedBox(height: 14),
+                const _FormLabel('E-Mail-Adresse'),
+                TextField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  decoration: _authInputDecoration(dark: widget.darkMode),
+                ),
+                const SizedBox(height: 14),
+                const _FormLabel('Kennwort'),
+                TextField(
+                  controller: _password,
+                  obscureText: true,
+                  decoration: _authInputDecoration(
+                    dark: widget.darkMode,
+                    hintText:
+                        'Mindestens 14 Zeichen, Groß-/Kleinbuchstabe, Zahl',
+                  ),
+                ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Color(0xFF8D0000)),
+                    ),
+                  ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _sending ? null : _register,
+                    child: Text(
+                      _sending
+                          ? 'Konto wird erstellt …'
+                          : 'Konto sicher erstellen',
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Zurück zur Anmeldung'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
   Future<void> _register() async {
-    setState(() { _sending = true; _error = null; });
+    setState(() {
+      _sending = true;
+      _error = null;
+    });
     try {
-      final response = await http.post(Uri.base.resolve('api/auth/register'), headers: const {'Content-Type': 'application/json'}, body: jsonEncode({'username': _username.text, 'email': _email.text, 'password': _password.text}));
+      final response = await http.post(
+        Uri.base.resolve('api/auth/register'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': _username.text,
+          'email': _email.text,
+          'password': _password.text,
+        }),
+      );
       if (!mounted) return;
       if (response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Konto erstellt. Du kannst dich jetzt anmelden.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konto erstellt. Du kannst dich jetzt anmelden.'),
+          ),
+        );
         Navigator.pop(context);
       } else {
-        setState(() => _error = response.statusCode == 429 ? 'Zu viele Versuche. Bitte warte kurz.' : 'Konto konnte nicht erstellt werden. Prüfe deine Angaben.');
+        setState(
+          () => _error = response.statusCode == 429
+              ? 'Zu viele Versuche. Bitte warte kurz.'
+              : 'Konto konnte nicht erstellt werden. Prüfe deine Angaben.',
+        );
       }
-    } catch (_) { if (mounted) setState(() => _error = 'Der Dienst ist gerade nicht erreichbar.'); }
-    finally { if (mounted) setState(() => _sending = false); }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Der Dienst ist gerade nicht erreichbar.');
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
   }
 }
 
 class PasswordChangePage extends StatefulWidget {
-  const PasswordChangePage({super.key, required this.csrfToken, required this.darkMode});
+  const PasswordChangePage({
+    super.key,
+    required this.csrfToken,
+    required this.darkMode,
+  });
   final String csrfToken;
   final bool darkMode;
 
@@ -881,7 +1004,9 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       if (!mounted) return;
       if (response.statusCode == 200) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute<void>(builder: (_) => BuilderHome(csrfToken: widget.csrfToken)),
+          MaterialPageRoute<void>(
+            builder: (_) => BuilderHome(csrfToken: widget.csrfToken),
+          ),
           (_) => false,
         );
         return;
@@ -898,11 +1023,22 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
 }
 
 class BuilderHome extends StatefulWidget {
-  const BuilderHome({super.key, required this.csrfToken, this.assetPicker, this.projectCreator});
+  const BuilderHome({
+    super.key,
+    required this.csrfToken,
+    this.assetPicker,
+    this.projectCreator,
+  });
 
   final String csrfToken;
   final BrandAssetPicker? assetPicker;
-  final Future<void> Function({required String name, required String company, required String description, required String fontFamily})? projectCreator;
+  final Future<void> Function({
+    required String name,
+    required String company,
+    required String description,
+    required String fontFamily,
+  })?
+  projectCreator;
 
   @override
   State<BuilderHome> createState() => _BuilderHomeState();
@@ -949,11 +1085,26 @@ class _BuilderHomeState extends State<BuilderHome> {
                                 onCreate: _openAssistant,
                                 onOpenMedia: _openMedia,
                               )
-                            : _AssistantWorkspace(
+                            : _selectedSection == 1
+                            ? _AssistantWorkspace(
                                 logo: _logo,
                                 referenceImage: _referenceImage,
                                 onAddMaterial: () =>
                                     _openAssistant(initialStep: 1),
+                              )
+                            : AccountPage(
+                                csrfToken: widget.csrfToken,
+                                onChangePassword: () =>
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => PasswordChangePage(
+                                          csrfToken: widget.csrfToken,
+                                          darkMode:
+                                              Theme.of(context).brightness ==
+                                              Brightness.dark,
+                                        ),
+                                      ),
+                                    ),
                               ),
                       ),
                     ),
@@ -1031,7 +1182,12 @@ class _BuilderHomeState extends State<BuilderHome> {
     required String fontFamily,
   }) async {
     if (widget.projectCreator != null) {
-      await widget.projectCreator!(name: name, company: company, description: description, fontFamily: fontFamily);
+      await widget.projectCreator!(
+        name: name,
+        company: company,
+        description: description,
+        fontFamily: fontFamily,
+      );
       return;
     }
     final project = await _projects.create(
@@ -1276,7 +1432,12 @@ class _TopBar extends StatelessWidget {
 }
 
 class _Dashboard extends StatelessWidget {
-  const _Dashboard({required this.onCreate, required this.onOpenMedia, required this.projects, required this.loading});
+  const _Dashboard({
+    required this.onCreate,
+    required this.onOpenMedia,
+    required this.projects,
+    required this.loading,
+  });
   final VoidCallback onCreate;
   final ValueChanged<ProjectSummary> onOpenMedia;
   final List<ProjectSummary> projects;
@@ -1302,23 +1463,33 @@ class _Dashboard extends StatelessWidget {
       ),
       const SizedBox(height: 30),
       _ProjectSlotCard(onCreate: onCreate),
-      if (loading) const Padding(padding: EdgeInsets.only(top: 20), child: CircularProgressIndicator())
+      if (loading)
+        const Padding(
+          padding: EdgeInsets.only(top: 20),
+          child: CircularProgressIndicator(),
+        )
       else if (projects.isNotEmpty) ...[
         const SizedBox(height: 28),
         Text('Deine Projekte', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
-        ...projects.map((project) => Card(
-          child: ListTile(
-            title: Text(project.name),
-            subtitle: Text(project.company?.isEmpty ?? true ? project.fontFamily : '${project.company} · ${project.fontFamily}'),
-            leading: const Icon(Icons.folder_open_outlined),
-            trailing: IconButton(
-              tooltip: 'Mediathek öffnen',
-              onPressed: () => onOpenMedia(project),
-              icon: const Icon(Icons.perm_media_outlined),
+        ...projects.map(
+          (project) => Card(
+            child: ListTile(
+              title: Text(project.name),
+              subtitle: Text(
+                project.company?.isEmpty ?? true
+                    ? project.fontFamily
+                    : '${project.company} · ${project.fontFamily}',
+              ),
+              leading: const Icon(Icons.folder_open_outlined),
+              trailing: IconButton(
+                tooltip: 'Mediathek öffnen',
+                onPressed: () => onOpenMedia(project),
+                icon: const Icon(Icons.perm_media_outlined),
+              ),
             ),
           ),
-        )),
+        ),
       ],
       const SizedBox(height: 32),
       Text('Dein Workflow', style: Theme.of(context).textTheme.titleLarge),
@@ -1384,7 +1555,13 @@ class _ProjectMediaSheetState extends State<_ProjectMediaSheet> {
       final assets = await widget.repository.listAssets(widget.project.id);
       if (mounted) setState(() => _assets = assets);
     } on ProjectApiException {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mediathek konnte nicht geladen werden.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mediathek konnte nicht geladen werden.'),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1402,9 +1579,20 @@ class _ProjectMediaSheetState extends State<_ProjectMediaSheet> {
       );
       await _load();
     } on BrandAssetPickerException catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
     } on ProjectApiException {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload nicht möglich. Bitte prüfe Format und Größe.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Upload nicht möglich. Bitte prüfe Format und Größe.',
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -1413,9 +1601,19 @@ class _ProjectMediaSheetState extends State<_ProjectMediaSheet> {
   Future<void> _delete(MediaAsset asset) async {
     try {
       await widget.repository.deleteAsset(widget.project.id, asset.id);
-      if (mounted) setState(() => _assets = _assets.where((item) => item.id != asset.id).toList(growable: false));
+      if (mounted) {
+        setState(
+          () => _assets = _assets
+              .where((item) => item.id != asset.id)
+              .toList(growable: false),
+        );
+      }
     } on ProjectApiException {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Datei konnte nicht entfernt werden.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Datei konnte nicht entfernt werden.')),
+        );
+      }
     }
   }
 
@@ -1426,45 +1624,132 @@ class _ProjectMediaSheetState extends State<_ProjectMediaSheet> {
     maxChildSize: .92,
     builder: (context, controller) => Container(
       padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-      decoration: const BoxDecoration(color: Color(0xFFFDFCFB), borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFDFCFB),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       child: Column(
         children: [
-          Container(width: 42, height: 4, decoration: BoxDecoration(color: const Color(0xFFD4D1D9), borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 22),
-          Row(children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Mediathek', style: Theme.of(context).textTheme.headlineSmall),
-              Text(widget.project.name, style: const TextStyle(color: Color(0xFF686670))),
-            ])),
-            PopupMenuButton<BrandAssetKind>(
-              enabled: !_uploading,
-              onSelected: _add,
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: BrandAssetKind.logo, child: Text('Logo hochladen')),
-                PopupMenuItem(value: BrandAssetKind.referenceImage, child: Text('Bild hochladen')),
-              ],
-              icon: _uploading ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_photo_alternate_outlined),
+          Container(
+            width: 42,
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD4D1D9),
+              borderRadius: BorderRadius.circular(2),
             ),
-          ]),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mediathek',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    Text(
+                      widget.project.name,
+                      style: const TextStyle(color: Color(0xFF686670)),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<BrandAssetKind>(
+                enabled: !_uploading,
+                onSelected: _add,
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: BrandAssetKind.logo,
+                    child: Text('Logo hochladen'),
+                  ),
+                  PopupMenuItem(
+                    value: BrandAssetKind.referenceImage,
+                    child: Text('Bild hochladen'),
+                  ),
+                ],
+                icon: _uploading
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.add_photo_alternate_outlined),
+              ),
+            ],
+          ),
           const SizedBox(height: 18),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _assets.isEmpty
-                ? const Center(child: Text('Noch keine privaten Medien in diesem Projekt.'))
+                ? const Center(
+                    child: Text(
+                      'Noch keine privaten Medien in diesem Projekt.',
+                    ),
+                  )
                 : GridView.builder(
                     controller: controller,
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 180, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: .9),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 180,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: .9,
+                        ),
                     itemCount: _assets.length,
                     itemBuilder: (context, index) {
                       final asset = _assets[index];
                       return Card(
                         clipBehavior: Clip.antiAlias,
-                        child: Stack(children: [
-                          Positioned.fill(child: Image.network(Uri.base.resolve(asset.contentUrl).toString(), fit: BoxFit.cover, errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined)))),
-                          Positioned(left: 8, bottom: 8, child: DecoratedBox(decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4), child: Text(asset.kind == 'logo' ? 'Logo' : 'Bild', style: const TextStyle(color: Colors.white, fontSize: 11))))),
-                          Positioned(right: 2, top: 2, child: IconButton(onPressed: () => _delete(asset), icon: const Icon(Icons.delete_outline), color: Colors.white, style: IconButton.styleFrom(backgroundColor: Colors.black54))),
-                        ]),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Image.network(
+                                Uri.base.resolve(asset.contentUrl).toString(),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => const Center(
+                                  child: Icon(Icons.broken_image_outlined),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: 8,
+                              bottom: 8,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Colors.black87,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 4,
+                                  ),
+                                  child: Text(
+                                    asset.kind == 'logo' ? 'Logo' : 'Bild',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 2,
+                              top: 2,
+                              child: IconButton(
+                                onPressed: () => _delete(asset),
+                                icon: const Icon(Icons.delete_outline),
+                                color: Colors.white,
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.black54,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -1690,7 +1975,8 @@ class _NewProjectSheet extends StatefulWidget {
     required String company,
     required String description,
     required String fontFamily,
-  }) onCreateProject;
+  })
+  onCreateProject;
 
   @override
   State<_NewProjectSheet> createState() => _NewProjectSheetState();
@@ -1969,7 +2255,13 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
     }
     if (widget.initialStep == 1) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dein Markenmaterial ist für diese Sitzung vorgemerkt.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Dein Markenmaterial ist für diese Sitzung vorgemerkt.',
+          ),
+        ),
+      );
       return;
     }
     setState(() => _creating = true);
@@ -1982,9 +2274,23 @@ class _NewProjectSheetState extends State<_NewProjectSheet> {
       );
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('„${_projectController.text.trim()}“ wurde sicher gespeichert.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '„${_projectController.text.trim()}“ wurde sicher gespeichert.',
+          ),
+        ),
+      );
     } on ProjectApiException {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Projekt konnte nicht gespeichert werden. Bitte versuche es später erneut.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Projekt konnte nicht gespeichert werden. Bitte versuche es später erneut.',
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _creating = false);
     }

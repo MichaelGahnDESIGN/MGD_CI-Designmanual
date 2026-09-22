@@ -8,6 +8,14 @@ declare(strict_types=1);
 // source; never reuse the database password as an application key.
 return [
     'environment' => 'production',
+    'app' => [
+        'public_base_url' => 'https://ci.michael-gahn.de',
+    ],
+    // Shared Hosting nutzt den lokalen Mail-Transport. Der Absender muss auf
+    // der eigenen Domain existieren und wird ausschließlich serverseitig gesetzt.
+    'mail' => [
+        'from' => 'no-reply@ci.michael-gahn.de',
+    ],
     'database' => [
         'host' => '127.0.0.1',
         'port' => 3306,
