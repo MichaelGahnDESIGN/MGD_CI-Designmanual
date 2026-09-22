@@ -1,0 +1,26 @@
+name: Funktionsvorschlag
+description: Neue Funktion für Editor, Module, Vorlagen oder Export vorschlagen
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    attributes:
+      label: Problem oder Möglichkeit
+      description: Welchen Arbeitsablauf einer Agentur verbessert das?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Vorgeschlagene Lösung
+      description: Beschreibe die gewünschte Erfahrung.
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Betroffene Bereiche
+      options:
+        - label: Editor
+        - label: Vorschau
+        - label: HTML-Export
+        - label: PDF-Export
+        - label: Manual-Modul oder Vorlage

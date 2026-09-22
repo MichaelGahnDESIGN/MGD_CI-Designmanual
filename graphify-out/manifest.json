@@ -1,0 +1,416 @@
+{
+  "app/lib/features/editor/typography/font_catalog.dart": {
+    "mtime": 1789968976.7145991,
+    "seen": 1789969416.699767,
+    "ast_hash": "6f39e81548fc7c870abf03aa6d6732fe",
+    "semantic_hash": "6f39e81548fc7c870abf03aa6d6732fe"
+  },
+  "app/lib/features/editor/typography/typography_selector.dart": {
+    "mtime": 1789969206.0929694,
+    "seen": 1789969416.699771,
+    "ast_hash": "8f21575b1327284ef2f424b0f9fad049",
+    "semantic_hash": "8f21575b1327284ef2f424b0f9fad049"
+  },
+  "app/lib/main.dart": {
+    "mtime": 1789972200.3451712,
+    "seen": 1789972346.535784,
+    "ast_hash": "55ad91eea2979e02d7576143a2ca96de",
+    "semantic_hash": ""
+  },
+  "app/test/widget_test.dart": {
+    "mtime": 1789972204.2223747,
+    "seen": 1789972346.535787,
+    "ast_hash": "42c96a71616747b48721c27fd32e12cf",
+    "semantic_hash": ""
+  },
+  "app/web/manifest.json": {
+    "mtime": 1789963589.3928716,
+    "seen": 1789969416.6997771,
+    "ast_hash": "87875923b5fe442bded495f10022f79e",
+    "semantic_hash": "87875923b5fe442bded495f10022f79e"
+  },
+  "backend/config.example.php": {
+    "mtime": 1789964159.880506,
+    "seen": 1789969416.699782,
+    "ast_hash": "3e9689dbe053d3a90297b5438904e26d",
+    "semantic_hash": "3e9689dbe053d3a90297b5438904e26d"
+  },
+  "backend/public/admin/landing-editor.js": {
+    "mtime": 1789969112.0095387,
+    "seen": 1789969416.699784,
+    "ast_hash": "49288e0fd1a3e012db1eb4c7000c5d54",
+    "semantic_hash": "49288e0fd1a3e012db1eb4c7000c5d54"
+  },
+  "backend/public/index.php": {
+    "mtime": 1789967275.372684,
+    "seen": 1789969416.699785,
+    "ast_hash": "444a86c7c034402255c0d4471adb4a6d",
+    "semantic_hash": "444a86c7c034402255c0d4471adb4a6d"
+  },
+  ".github/ISSUE_TEMPLATE/feature_request.yml": {
+    "mtime": 1789955846.9125538,
+    "seen": 1789969426.65296,
+    "ast_hash": "65b2d64a051a3b18d877a97f88e0661c",
+    "semantic_hash": ""
+  },
+  ".github/PULL_REQUEST_TEMPLATE.md": {
+    "mtime": 1789955846.817906,
+    "seen": 1789969426.652962,
+    "ast_hash": "66181088f72b26edebeca30dd0a4f64a",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1789958115.235281,
+    "seen": 1789969426.652964,
+    "ast_hash": "777025b389aec0bc0980c7484d1aaa7e",
+    "semantic_hash": ""
+  },
+  "CHANGELOG.md": {
+    "mtime": 1789971950.4375093,
+    "seen": 1789972346.5358038,
+    "ast_hash": "4abdc8a33860261b221e5aa9f1a9588a",
+    "semantic_hash": ""
+  },
+  "CONTRIBUTING.md": {
+    "mtime": 1789955693.3198752,
+    "seen": 1789969426.652971,
+    "ast_hash": "2aeb7a2ecf34fb6f889043a0e31685e9",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1789969342.1483724,
+    "seen": 1789969426.6529732,
+    "ast_hash": "28e6df4fae90322ba1644fcbb4c6df0f",
+    "semantic_hash": ""
+  },
+  "ROADMAP.md": {
+    "mtime": 1789957109.4152493,
+    "seen": 1789969426.652975,
+    "ast_hash": "c0e8c83f00dedde16b8d03837616ecac",
+    "semantic_hash": ""
+  },
+  "SECURITY.md": {
+    "mtime": 1789961606.9710898,
+    "seen": 1789969426.652977,
+    "ast_hash": "0a5154b1d7a701a4f6d79bbd118e3d29",
+    "semantic_hash": ""
+  },
+  "TODO/TODO.html": {
+    "mtime": 1789969177.634712,
+    "seen": 1789969426.652979,
+    "ast_hash": "3110c4378549e50c6244a5e7c15fce6b",
+    "semantic_hash": ""
+  },
+  "WIKI/00-OVERVIEW/Product-Overview.md": {
+    "mtime": 1789955694.0684953,
+    "seen": 1789969426.6529799,
+    "ast_hash": "fb3c436c5df3f8ac349a07fd8bc0ba4b",
+    "semantic_hash": ""
+  },
+  "WIKI/01-GETTING-STARTED/Quickstart.md": {
+    "mtime": 1789955846.5213256,
+    "seen": 1789969426.652982,
+    "ast_hash": "b868a68bfdfce02c05fab4b62d7a5469",
+    "semantic_hash": ""
+  },
+  "WIKI/02-ARCHITECTURE/Data-and-Security.md": {
+    "mtime": 1789957182.3024035,
+    "seen": 1789969426.652988,
+    "ast_hash": "d099ddab9d0e8b383d9289c27195e61b",
+    "semantic_hash": ""
+  },
+  "WIKI/02-ARCHITECTURE/Manual-Modules.md": {
+    "mtime": 1789955694.047126,
+    "seen": 1789969426.6529899,
+    "ast_hash": "44eea17fc6560703961ef5ec02b1afb8",
+    "semantic_hash": ""
+  },
+  "WIKI/02-ARCHITECTURE/Principles.md": {
+    "mtime": 1789955846.6515484,
+    "seen": 1789969426.652992,
+    "ast_hash": "5b9911e67862ed768052ef3623f5ef56",
+    "semantic_hash": ""
+  },
+  "WIKI/03-WORKFLOWS/Roadmap.md": {
+    "mtime": 1789955694.0881584,
+    "seen": 1789969426.6529942,
+    "ast_hash": "2e0d66119a4a41c6f54b71397ad07c59",
+    "semantic_hash": ""
+  },
+  "WIKI/04-EXPORTS/Export-Guide.md": {
+    "mtime": 1789955693.9131954,
+    "seen": 1789969426.652996,
+    "ast_hash": "f1897b83e8890df13a4eb1a37aa54a47",
+    "semantic_hash": ""
+  },
+  "WIKI/Home.md": {
+    "mtime": 1789955846.2028027,
+    "seen": 1789969426.652998,
+    "ast_hash": "99aada2297108782907e9c30b8ca4505",
+    "semantic_hash": ""
+  },
+  "WIKI/README.md": {
+    "mtime": 1789957109.4084191,
+    "seen": 1789969426.6529999,
+    "ast_hash": "b56cf425a11aa870688d242534c1e2b7",
+    "semantic_hash": ""
+  },
+  "WIKI/_Sidebar.md": {
+    "mtime": 1789955846.7299304,
+    "seen": 1789969426.653001,
+    "ast_hash": "b2b5976ac85edd364d3a77dd66189021",
+    "semantic_hash": ""
+  },
+  "app/README.md": {
+    "mtime": 1789965776.1030784,
+    "seen": 1789969426.653006,
+    "ast_hash": "9f4139dfd653de2bd1d6051881ffe22f",
+    "semantic_hash": ""
+  },
+  "app/analysis_options.yaml": {
+    "mtime": 1789963364.847553,
+    "seen": 1789969426.653008,
+    "ast_hash": "c6fd865e48e8b7dbf8a5268933952dc3",
+    "semantic_hash": ""
+  },
+  "app/pubspec.yaml": {
+    "mtime": 1789971916.1746573,
+    "seen": 1789972346.5358331,
+    "ast_hash": "08f66bf51ee095ccdcbd02f4d2fe93b8",
+    "semantic_hash": ""
+  },
+  "app/web/index.html": {
+    "mtime": 1789963589.3996103,
+    "seen": 1789969426.6530108,
+    "ast_hash": "768b6b126adb0153bf2227a8098bf6d3",
+    "semantic_hash": ""
+  },
+  "assets/fonts/licenses/lato-OFL-1.1.txt": {
+    "mtime": 1789968914.1853335,
+    "seen": 1789969426.653013,
+    "ast_hash": "865d435a4da07c23055a8b9ffe7f9d54",
+    "semantic_hash": ""
+  },
+  "assets/fonts/licenses/merriweather-OFL-1.1.txt": {
+    "mtime": 1789968914.9452581,
+    "seen": 1789969426.6530151,
+    "ast_hash": "375c3789d5898ec721205ca608e59c49",
+    "semantic_hash": ""
+  },
+  "assets/fonts/licenses/montserrat-OFL-1.1.txt": {
+    "mtime": 1789968914.5733652,
+    "seen": 1789969426.653017,
+    "ast_hash": "fd37613fd0b9b93e1a89782d16652c61",
+    "semantic_hash": ""
+  },
+  "assets/fonts/licenses/open-sans-OFL-1.1.txt": {
+    "mtime": 1789968913.9241636,
+    "seen": 1789969426.653019,
+    "ast_hash": "b59185400a83be7487189ea800df960a",
+    "semantic_hash": ""
+  },
+  "backend/README.md": {
+    "mtime": 1789959230.3734865,
+    "seen": 1789969426.653024,
+    "ast_hash": "d6bcc815e560a0d39656427a34b0dcf9",
+    "semantic_hash": ""
+  },
+  "backend/public/admin/index.html": {
+    "mtime": 1789966831.1428976,
+    "seen": 1789969426.653026,
+    "ast_hash": "b669636b65773e518d8e318733c23596",
+    "semantic_hash": ""
+  },
+  "docs/architecture.md": {
+    "mtime": 1789957109.4336965,
+    "seen": 1789969426.653028,
+    "ast_hash": "717182413d2f0466cbfc4bd3d033f176",
+    "semantic_hash": ""
+  },
+  "docs/data-and-security.md": {
+    "mtime": 1789958115.4722826,
+    "seen": 1789969426.6530292,
+    "ast_hash": "2039439b8ff92b4294ce82c3645475aa",
+    "semantic_hash": ""
+  },
+  "docs/designmanual-content-model.md": {
+    "mtime": 1789957154.5455441,
+    "seen": 1789969426.6530309,
+    "ast_hash": "c202efdb254666440a705dc9686dbf4c",
+    "semantic_hash": ""
+  },
+  "docs/font-library.md": {
+    "mtime": 1789969199.0630805,
+    "seen": 1789969426.653034,
+    "ast_hash": "8ee21a0b43ecd861ca09c8f2aefe1a32",
+    "semantic_hash": ""
+  },
+  "docs/landing-cms.md": {
+    "mtime": 1789972250.5304976,
+    "seen": 1789972346.535848,
+    "ast_hash": "cde31e38823b8e71d7d076cbb7861f4d",
+    "semantic_hash": ""
+  },
+  "docs/manual-schema.md": {
+    "mtime": 1789958115.7583811,
+    "seen": 1789969426.653037,
+    "ast_hash": "a9a4a8739b78e6a9eccd214ca1b18b28",
+    "semantic_hash": ""
+  },
+  "docs/product-requirements.md": {
+    "mtime": 1789957154.4612224,
+    "seen": 1789969426.6530402,
+    "ast_hash": "c96fa5d0aaeeca18120990c9a0de708c",
+    "semantic_hash": ""
+  },
+  "docs/product-vision.md": {
+    "mtime": 1789957109.4289887,
+    "seen": 1789969426.653045,
+    "ast_hash": "44031b31240025a6937ec55140c65d3a",
+    "semantic_hash": ""
+  },
+  "docs/release-gates.md": {
+    "mtime": 1789961607.1567,
+    "seen": 1789969426.6530461,
+    "ast_hash": "eb2d3ace7464fec4549f5d5855060a67",
+    "semantic_hash": ""
+  },
+  "docs/research-sources.md": {
+    "mtime": 1789957182.2310882,
+    "seen": 1789969426.653048,
+    "ast_hash": "90b57506fdb7448df6e07e217f0c526e",
+    "semantic_hash": ""
+  },
+  "app/web/favicon.png": {
+    "mtime": 1789761872.0,
+    "seen": 1789969426.6530502,
+    "ast_hash": "5dcef449791fa27946b3d35ad8803796",
+    "semantic_hash": ""
+  },
+  "app/web/icons/Icon-192.png": {
+    "mtime": 1789761872.0,
+    "seen": 1789969426.6530519,
+    "ast_hash": "ac9a721a12bbc803b44f645561ecb1e1",
+    "semantic_hash": ""
+  },
+  "app/web/icons/Icon-512.png": {
+    "mtime": 1789761872.0,
+    "seen": 1789969426.653053,
+    "ast_hash": "96e752610906ba2a93c65f8abe1645f1",
+    "semantic_hash": ""
+  },
+  "app/web/icons/Icon-maskable-192.png": {
+    "mtime": 1789963349.0180025,
+    "seen": 1789969426.653055,
+    "ast_hash": "c457ef57daa1d16f64b27b786ec2ea3c",
+    "semantic_hash": ""
+  },
+  "app/web/icons/Icon-maskable-512.png": {
+    "mtime": 1789963349.0178797,
+    "seen": 1789969426.653057,
+    "ast_hash": "301a7604d45b3e739efc881eb04896ea",
+    "semantic_hash": ""
+  },
+  "backend/migrations/001_identity_security_foundation.sql": {
+    "mtime": 1789959329.3852642,
+    "seen": 1789969442.923552,
+    "ast_hash": "4cfd61b2d74c1994add34845393d1e5f",
+    "semantic_hash": ""
+  },
+  "backend/migrations/002_projects_manuals_entitlements.sql": {
+    "mtime": 1789963289.4050727,
+    "seen": 1789969442.923554,
+    "ast_hash": "19cae788172599d669ee139252fd8e61",
+    "semantic_hash": ""
+  },
+  "backend/migrations/003_login_identity_and_password_change.sql": {
+    "mtime": 1789964249.4057276,
+    "seen": 1789969442.923556,
+    "ast_hash": "80d2cbe67ed2e10f2ea2f8bedeb7c00a",
+    "semantic_hash": ""
+  },
+  "backend/migrations/004_cms_landing_i18n.sql": {
+    "mtime": 1789966384.1476939,
+    "seen": 1789969442.923558,
+    "ast_hash": "753dbc14363ee38b5a974c99d5aee5d5",
+    "semantic_hash": ""
+  },
+  "app/assets/font-licenses/lato-OFL-1.1.txt": {
+    "mtime": 1789969570.4417522,
+    "seen": 1789969638.684909,
+    "ast_hash": "865d435a4da07c23055a8b9ffe7f9d54",
+    "semantic_hash": ""
+  },
+  "app/assets/font-licenses/merriweather-OFL-1.1.txt": {
+    "mtime": 1789969571.1864488,
+    "seen": 1789969638.6849122,
+    "ast_hash": "375c3789d5898ec721205ca608e59c49",
+    "semantic_hash": ""
+  },
+  "app/assets/font-licenses/montserrat-OFL-1.1.txt": {
+    "mtime": 1789969570.815713,
+    "seen": 1789969638.6849148,
+    "ast_hash": "fd37613fd0b9b93e1a89782d16652c61",
+    "semantic_hash": ""
+  },
+  "app/assets/font-licenses/open-sans-OFL-1.1.txt": {
+    "mtime": 1789969570.0910332,
+    "seen": 1789969638.684918,
+    "ast_hash": "b59185400a83be7487189ea800df960a",
+    "semantic_hash": ""
+  },
+  "app/lib/features/landing/landing_layout.dart": {
+    "mtime": 1789970448.7454214,
+    "seen": 1789971004.106303,
+    "ast_hash": "8c50d86962fe4662a3e433a6288f2e85",
+    "semantic_hash": ""
+  },
+  "app/lib/features/legal/browser_storage.dart": {
+    "mtime": 1789971908.7660909,
+    "seen": 1789972346.535775,
+    "ast_hash": "9225917aadbf7da40488bf331f037108",
+    "semantic_hash": ""
+  },
+  "app/lib/features/legal/browser_storage_stub.dart": {
+    "mtime": 1789971908.8774414,
+    "seen": 1789972346.535777,
+    "ast_hash": "9bc00eb5e9f08bfe6a5684fb5ef52bf4",
+    "semantic_hash": ""
+  },
+  "app/lib/features/legal/browser_storage_web.dart": {
+    "mtime": 1789971908.9396737,
+    "seen": 1789972346.535778,
+    "ast_hash": "2e001b3b9d17e4d12fad78aee05f2a15",
+    "semantic_hash": ""
+  },
+  "app/lib/features/legal/cookie_consent.dart": {
+    "mtime": 1789971940.5350883,
+    "seen": 1789972346.535779,
+    "ast_hash": "2ca5ff1fccaf38d1d35184c57386cd82",
+    "semantic_hash": ""
+  },
+  "app/lib/features/legal/landing_footer.dart": {
+    "mtime": 1789971940.5822792,
+    "seen": 1789972346.5357802,
+    "ast_hash": "0d309f0152366c38a9e8caf0a9d5fb12",
+    "semantic_hash": ""
+  },
+  "app/lib/features/legal/legal_document.dart": {
+    "mtime": 1789972200.1522262,
+    "seen": 1789972346.5357819,
+    "ast_hash": "c432142f06094531ccdb7cec086c5276",
+    "semantic_hash": ""
+  },
+  "app/lib/features/legal/legal_page.dart": {
+    "mtime": 1789971940.663827,
+    "seen": 1789972346.5357828,
+    "ast_hash": "3eeef5a04c55dd9219bb15afd7f5d3df",
+    "semantic_hash": ""
+  },
+  "app/lib/shared/ci_brand_mark.dart": {
+    "mtime": 1789971908.5526905,
+    "seen": 1789972346.535785,
+    "ast_hash": "a229dbfe702d50f3808ccda3bddcabfc",
+    "semantic_hash": ""
+  }
+}

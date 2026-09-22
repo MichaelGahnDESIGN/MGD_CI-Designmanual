@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CI BUILDER · Landing Studio</title>
+  <link rel="stylesheet" href="vendor/grapesjs/grapes.min.css">
+  <link rel="stylesheet" href="landing-editor.css">
+</head>
+<body>
+  <header class="studio-bar">
+    <div class="brand"><span class="brand-mark">M</span><span><strong>CI BUILDER</strong><small>LANDING STUDIO</small></span></div>
+    <div class="studio-context"><span id="save-state">Ungespeichert</span><span class="dot">·</span><span>CMS / Landingpage</span></div>
+    <nav class="studio-actions" aria-label="Studio-Aktionen">
+      <button class="quiet" id="language-de" type="button">DE</button>
+      <button class="quiet" id="language-en" type="button">EN</button>
+      <button class="quiet" id="theme-toggle" type="button" aria-label="Erscheinungsbild wechseln">◐</button>
+      <button class="primary" id="save-button" type="button">Veröffentlichen</button>
+    </nav>
+  </header>
+  <main id="gjs" aria-label="Landingpage-Editor"></main>
+  <script src="vendor/grapesjs/grapes.min.js"></script>
+  <script src="landing-editor.js"></script>
+</body>
+</html>

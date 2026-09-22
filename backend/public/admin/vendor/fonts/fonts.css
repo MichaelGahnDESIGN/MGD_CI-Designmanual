@@ -1,0 +1,15 @@
+/*
+ * Lokale Schriftbibliothek des CI BUILDER.
+ * Keine Datei wird von Google Fonts oder einem anderen CDN geladen.
+ */
+@font-face{font-family:'Open Sans';src:url('OpenSans-Ext-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Open Sans';src:url('OpenSans-Ext-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Open Sans';src:url('OpenSans-Ext-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Lato';src:url('Lato-Ext-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Lato';src:url('Lato-Ext-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Montserrat';src:url('Montserrat-Ext-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Montserrat';src:url('Montserrat-Ext-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Montserrat';src:url('Montserrat-Ext-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Merriweather';src:url('Merriweather-Ext-400.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Merriweather';src:url('Merriweather-Ext-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:'Merriweather';src:url('Merriweather-Ext-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}

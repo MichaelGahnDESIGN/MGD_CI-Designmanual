@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Erstelle professionelle Designmanuals und Social-Media-Codizes: Farben, Typografie, Logo-Regeln und Markenleitlinien in einem klaren, exportierbaren Projekt.">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#111114" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#F6F5F2" media="(prefers-color-scheme: light)">
+
+  <!-- Open Graph: Vorschau beim Teilen auf LinkedIn, WhatsApp und weiteren Diensten. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Michael Gahn DESIGN – CI BUILDER">
+  <meta property="og:title" content="CI BUILDER – Designmanuals, die Marken verständlich machen.">
+  <meta property="og:description" content="Erstelle, pflege und exportiere Designmanuals und Social-Media-Codizes für Teams, Kunden und Agenturen.">
+  <meta property="og:url" content="https://ci.michael-gahn.de/">
+  <meta property="og:image" content="https://ci.michael-gahn.de/icons/Icon-512.png">
+  <meta property="og:image:secure_url" content="https://ci.michael-gahn.de/icons/Icon-512.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Michael Gahn DESIGN CI BUILDER">
+
+  <!-- X/Twitter übernimmt dieselbe lokale Grafik, ohne externe Tracker. -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CI BUILDER – Designmanuals, die Marken verständlich machen.">
+  <meta name="twitter:description" content="Designmanual und Social-Media-Codex für Teams, Kunden und Agenturen erstellen und exportieren.">
+  <meta name="twitter:image" content="https://ci.michael-gahn.de/icons/Icon-512.png">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="CI BUILDER">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/Icon-512.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/Icon-512.png">
+
+  <title>CI BUILDER – Designmanual &amp; Social-Media-Codex | Michael Gahn DESIGN</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <script>
+    // Diese Anwendung ist noch kein Offline-Produkt. Ein alter Flutter-Service-
+    // Worker darf deshalb keine veraltete Login- oder Sicherheitsoberfläche
+    // ausliefern. Neue Releases werden stets direkt vom Server geladen.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => registration.unregister());
+      });
+    }
+  </script>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+node_modules/
+.tools/
+dist/
+coverage/
+BACKUPS/
+.env
+backend/config.php
+.env.*
+!.env.example
+exports/
+*.pdf
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+graphify-out/cache/
+
+# Local server-access notes — never commit credentials
+ZdAeUsBiEgRnWmaOnuRalT.md
+PLAYTEST/

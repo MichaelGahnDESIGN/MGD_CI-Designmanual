@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CI BUILDER — TODO</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f5f4f1;--card:#fff;--ink:#161619;--muted:#68666e;--line:#d9d6df;--accent:#111114}
+    @media(prefers-color-scheme:dark){:root{--bg:#111114;--card:#1c1c21;--ink:#f5f3ee;--muted:#bbb7bf;--line:#3c3942;--accent:#f5f3ee}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
+    main{width:min(1180px,calc(100% - 32px));margin:36px auto 80px}h1{margin:0;font-size:clamp(30px,5vw,54px);letter-spacing:-.04em}
+    .intro{color:var(--muted);max-width:720px}.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0}.toolbar input,.toolbar select,.toolbar button{min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);padding:0 12px}.toolbar input{flex:1;min-width:220px}.toolbar button{cursor:pointer;font-weight:700}
+    .stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}.stat{padding:8px 12px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+    .project-index{margin:18px 0;padding:16px;background:var(--card);border:1px solid var(--line);border-radius:14px}.project-index a{color:inherit;margin-right:16px}
+    .table-wrap{overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:16px}table{width:100%;border-collapse:collapse;min-width:980px}th,td{padding:13px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:var(--bg);font-size:12px;font-weight:700}.s-progress{background:#fff0bf;color:#5d4700}.s-done{background:#dff4e5;color:#125b2a}.s-offen{background:#e7e6ec;color:#33313a}.p-hoch{background:#ffe0dc;color:#7b1810}.p-mittel{background:#e5ebff;color:#1b3f85}.p-niedrig{background:#e7f2ed;color:#21503b}
+    .row-done{opacity:.72}.row-done .titel-col{text-decoration:line-through}.datum-erledigt{display:block;color:var(--muted);font-size:12px}.todo-links{margin-top:6px}.todo-links a{color:inherit}.group-heading td{font-weight:800;background:var(--bg)}
+  </style>
+</head>
+<body>
+<main>
+  <h1>CI BUILDER — TODO</h1>
+  <p class="intro">Verbindlicher Projektstand für offene, laufende und erledigte Aufgaben. Zugangsdaten, Backups und Kundendaten gehören nicht in diese Datei.</p>
+
+  <section class="project-index" id="projectIndex" aria-label="Projektdokumentation">
+    <strong>Dokumentation:</strong>
+    <a href="../README.md">README</a>
+    <a href="../ROADMAP.md">Roadmap</a>
+    <a href="../docs/architecture.md">Architektur</a>
+    <a href="../docs/data-and-security.md">Sicherheit</a>
+    <a href="../WIKI/README.md">Wiki</a>
+  </section>
+
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Todos durchsuchen …" aria-label="Todos durchsuchen">
+    <select id="filterStatus" aria-label="Status filtern"><option value="">Alle Status</option><option value="offen">Offen</option><option value="progress">In Arbeit</option><option value="done">Erledigt</option></select>
+    <select id="filterKategorie" aria-label="Kategorie filtern"><option value="">Alle Kategorien</option></select>
+    <button id="btnDone" type="button">✓ Erledigte ausblenden</button>
+    <button id="btnGroup" type="button">🗂 Gruppieren</button>
+    <button id="btnCleanup" type="button">🧹 Aufräumen</button>
+  </div>
+  <div class="stats" id="stats" aria-live="polite"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Titel</th><th>Kategorie</th><th>Priorität</th><th>Status</th><th>Quelle</th><th>Notizen</th><th>Datum</th></tr></thead>
+      <tbody id="todoBody">
+        <!-- Neue Einträge verwenden TNNN, data-kategorie und ISO-Zeitstempel. -->
+        <tr class="row-done" data-status="done" data-prio="hoch" data-kategorie="design-system" data-unterkategorie="typografie" data-erstellt="2026-09-21T07:38" data-erledigt="2026-09-21T07:38">
+          <td class="id-col">T001</td><td class="titel-col">Open Sans lokal einbinden und Standardschrift-Auswahl ergänzen</td><td><span class="badge k-cat">Designsystem</span> › <span class="badge k-subcat">Typografie</span></td><td><span class="badge p-hoch">Hoch</span></td><td><span class="badge s-done">✓ Erledigt</span></td><td class="quelle-col">Nutzerauftrag</td><td class="notizen-col">Open Sans ist Standard; Lato, Montserrat und Merriweather sind lokal gebündelt.<div class="todo-links"><a href="../docs/font-library.md">Schriftkonzept</a></div></td><td class="datum-col">2026-09-21<span class="datum-erledigt">✓ 2026-09-21</span></td>
+        </tr>
+        <tr data-status="offen" data-prio="hoch" data-kategorie="store" data-unterkategorie="font-upload" data-erstellt="2026-09-21T07:38">
+          <td class="id-col">T002</td><td class="titel-col">Kostenpflichtigen Font-Upload sicher umsetzen</td><td><span class="badge k-cat">Store</span> › <span class="badge k-subcat">Font-Upload</span></td><td><span class="badge p-hoch">Hoch</span></td><td><span class="badge s-offen">Offen</span></td><td class="quelle-col">Nutzerauftrag</td><td class="notizen-col"><details><summary>Backend, Lizenz und Entitlement</summary>Serverseitige Formatprüfung, Größenlimit, Lizenzbestätigung, privater Projektspeicher, Malware-Prüfung, Projektberechtigung und dauerhaftes Einmalkauf-Entitlement vor Aktivierung des Uploads umsetzen.</details><div class="todo-links"><a href="../docs/font-library.md">Sicherheitskonzept</a></div></td><td class="datum-col">2026-09-21</td>
+        </tr>
+        <tr data-status="offen" data-prio="hoch" data-kategorie="editor" data-unterkategorie="typografie" data-erstellt="2026-09-21T07:38">
+          <td class="id-col">T003</td><td class="titel-col">Schriftauswahl in Projektmodell, Vorschau und Export persistieren</td><td><span class="badge k-cat">Editor</span> › <span class="badge k-subcat">Typografie</span></td><td><span class="badge p-hoch">Hoch</span></td><td><span class="badge s-offen">Offen</span></td><td class="quelle-col">Implementierungsstand</td><td class="notizen-col">Die UI-Auswahl existiert; als nächstes müssen API, Datenmodell, HTML- und PDF-Renderer dieselbe Schrift-ID verwenden.</td><td class="datum-col">2026-09-21</td>
+        </tr>
+        <tr class="row-done" data-status="done" data-prio="hoch" data-kategorie="onboarding" data-unterkategorie="markenmaterial" data-erstellt="2026-09-21T09:17" data-erledigt="2026-09-21T09:17">
+          <td class="id-col">T004</td><td class="titel-col">Materialauswahl klickbar, überspringbar und später erreichbar machen</td><td><span class="badge k-cat">Onboarding</span> › <span class="badge k-subcat">Markenmaterial</span></td><td><span class="badge p-hoch">Hoch</span></td><td><span class="badge s-done">✓ Erledigt</span></td><td class="quelle-col">Browser-Feedback</td><td class="notizen-col">Logo- und Referenzkarten öffnen den nativen Dateidialog. Der optionale Schritt kann sichtbar übersprungen und im Projektassistenten erneut geöffnet werden.<div class="todo-links"><a href="../docs/data-and-security.md">Daten- und Sicherheitsstand</a></div></td><td class="datum-col">2026-09-21<span class="datum-erledigt">✓ 2026-09-21</span></td>
+        </tr>
+        <tr data-status="offen" data-prio="hoch" data-kategorie="backend" data-unterkategorie="asset-upload" data-erstellt="2026-09-21T09:17">
+          <td class="id-col">T005</td><td class="titel-col">Privaten Projekt-Upload für Markenmaterial dauerhaft anbinden</td><td><span class="badge k-cat">Backend</span> › <span class="badge k-subcat">Asset-Upload</span></td><td><span class="badge p-hoch">Hoch</span></td><td><span class="badge s-offen">Offen</span></td><td class="quelle-col">Implementierungsstand</td><td class="notizen-col"><details><summary>Sichere Persistenz statt Sitzungszustand</summary>Projektmitgliedschaft, tatsächlichen MIME-Typ, Größenlimit und Malware-Prüfung serverseitig prüfen; Dateien außerhalb des Webroots ablegen und nur nach Berechtigungsprüfung ausliefern.</details><div class="todo-links"><a href="../docs/data-and-security.md">Upload-Sicherheitskonzept</a></div></td><td class="datum-col">2026-09-21</td>
+        </tr>
+        <tr class="row-done" data-status="done" data-prio="mittel" data-kategorie="landingpage" data-unterkategorie="rechtstexte" data-erstellt="2026-09-21T09:37" data-erledigt="2026-09-21T09:37">
+          <td class="id-col">T006</td><td class="titel-col">Entwurfslinks im öffentlichen Footer ausblenden</td><td><span class="badge k-cat">Landingpage</span> › <span class="badge k-subcat">Rechtstexte</span></td><td><span class="badge p-mittel">Mittel</span></td><td><span class="badge s-done">✓ Erledigt</span></td><td class="quelle-col">Nutzerauftrag</td><td class="notizen-col">Zahlung und Widerruf bleiben intern vorbereitet, erscheinen öffentlich aber erst nach rechtlicher Freigabe.</td><td class="datum-col">2026-09-21<span class="datum-erledigt">✓ 2026-09-21</span></td>
+        </tr>
+        <tr>
+          <td class="id-col">T007</td><td class="titel-col">Projektanlage dauerhaft und sicher speichern</td><td><span class="badge k-cat">Backend</span> › <span class="badge k-subcat">Projekte</span></td><td><span class="badge p-hoch">Hoch</span></td><td><span class="badge s-offen">Offen</span></td><td class="quelle-col">Live-Playtest</td><td class="notizen-col">Der Assistent erzeugt derzeit nur eine lokale Projektbasis. Als nächstes: CSRF-geschützte Projekt-API, Slot-Prüfung, verschlüsselte Felder, Projektliste und Reload-Test.</td><td class="datum-col">2026-09-21</td>
+        </tr>
+        <tr>
+          <td class="id-col">T008</td><td class="titel-col">Sichere Selbstregistrierung und Konto-Löschweg</td><td><span class="badge k-cat">Authentifizierung</span> › <span class="badge k-subcat">DSGVO</span></td><td><span class="badge p-hoch">Hoch</span></td><td><span class="badge s-offen">Offen</span></td><td class="quelle-col">Live-Playtest</td><td class="notizen-col">Vor Freischaltung: E-Mail-Verifikation, Rate-Limit, 2FA-Konzept und dokumentierte Lösch- bzw. Aufbewahrungsregeln serverseitig implementieren.</td><td class="datum-col">2026-09-21</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+<script>
+(() => {
+  const body=document.querySelector('#todoBody'),search=document.querySelector('#search'),status=document.querySelector('#filterStatus'),category=document.querySelector('#filterKategorie'),stats=document.querySelector('#stats');
+  let hideDone=false,grouped=false;
+  const rows=()=>[...body.querySelectorAll('tr[data-status]')];
+  const categories=[...new Set(rows().map(row=>row.dataset.kategorie))].sort();
+  categories.forEach(value=>{const option=document.createElement('option');option.value=value;option.textContent=value;category.append(option)});
+  function render(){
+    const term=search.value.toLowerCase();
+    rows().forEach(row=>{const show=(!term||row.textContent.toLowerCase().includes(term))&&(!status.value||row.dataset.status===status.value)&&(!category.value||row.dataset.kategorie===category.value)&&(!hideDone||row.dataset.status!=='done');row.hidden=!show});
+    const count=key=>rows().filter(row=>row.dataset.status===key).length;
+    stats.innerHTML=`<span class="stat">${count('offen')} Offen</span><span class="stat">${count('progress')} In Arbeit</span><span class="stat">${count('done')} Erledigt</span><span class="stat">${rows().length} Gesamt</span>`;
+  }
+  [search,status,category].forEach(control=>control.addEventListener('input',render));
+  document.querySelector('#btnDone').addEventListener('click',event=>{hideDone=!hideDone;event.currentTarget.textContent=hideDone?'✓ Erledigte einblenden':'✓ Erledigte ausblenden';render()});
+  document.querySelector('#btnGroup').addEventListener('click',event=>{grouped=!grouped;rows().sort((a,b)=>grouped?a.dataset.kategorie.localeCompare(b.dataset.kategorie):a.querySelector('.id-col').textContent.localeCompare(b.querySelector('.id-col').textContent)).forEach(row=>body.append(row));event.currentTarget.textContent=grouped?'↕ Flach anzeigen':'🗂 Gruppieren'});
+  document.querySelector('#btnCleanup').addEventListener('click',()=>{alert('Aufräumen erfolgt sicher über /todo-cleanup mit Sicherung und Bestätigung.')});
+  render();
+})();
+</script>
+</body>
+</html>

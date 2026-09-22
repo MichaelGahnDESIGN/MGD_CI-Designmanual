@@ -1,0 +1,16 @@
+# Generierte Artefakte und lokale Tool-Zustände
+app/build/
+app/.dart_tool/
+.tools/
+graphify-out/
+
+# Große Drittanbieter- und Binärdateien liefern keine hilfreiche Architektur.
+backend/public/admin/vendor/grapesjs/
+**/*.woff2
+**/*.otf
+
+# Lokale Sicherungen und Zugangsdaten dürfen nie analysiert werden.
+BACKUPS/
+.env
+.env.*
+ZdAeUsBiEgRnWmaOnuRalT.md

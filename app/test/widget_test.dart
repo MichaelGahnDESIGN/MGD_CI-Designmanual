@@ -1,0 +1,208 @@
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:mgd_ci_builder/main.dart';
+import 'package:mgd_ci_builder/features/legal/legal_document.dart';
+import 'package:mgd_ci_builder/features/onboarding/brand_asset_picker.dart';
+
+void main() {
+  test('resolves public legal documents from direct and hash URLs', () {
+    expect(
+      LegalDocumentContent.fromUri(Uri.parse('https://ci.example/impressum')),
+      LegalDocument.imprint,
+    );
+    expect(
+      LegalDocumentContent.fromUri(
+        Uri.parse('https://ci.example/#/datenschutz'),
+      ),
+      LegalDocument.privacy,
+    );
+  });
+
+  testWidgets('shows the CI BUILDER landing page', (tester) async {
+    await tester.pumpWidget(const CiBuilderApp());
+
+    expect(
+      find.text('Dein Markenmanual.\nKlar. Konsistent.\nBereit für überall.'),
+      findsOneWidget,
+    );
+    expect(find.text('Projekt starten'), findsOneWidget);
+    expect(find.text('DE'), findsOneWidget);
+    expect(find.text('Impressum'), findsOneWidget);
+    expect(find.text('AI-Philosophie'), findsOneWidget);
+    expect(find.text('Michael Gahn DESIGN'), findsOneWidget);
+    expect(find.text('Zahlung'), findsNothing);
+    expect(find.text('Widerruf'), findsNothing);
+    expect(find.text('Entwurf'), findsNothing);
+  });
+
+  testWidgets('keeps the landing hierarchy compact on tablet viewports', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(730, 889);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const CiBuilderApp());
+
+    final headline = find.text(
+      'Dein Markenmanual.\nKlar. Konsistent.\nBereit für überall.',
+    );
+    final headlineWidget = tester.widget<Text>(headline);
+    final headlineTheme = Theme.of(tester.element(headline))
+        .textTheme
+        .headlineLarge;
+
+    expect(tester.takeException(), isNull);
+    expect(tester.getTopLeft(find.text('CI BUILDER')).dy, lessThan(80));
+    expect(tester.getTopLeft(headline).dy, lessThan(240));
+    expect(headlineWidget.style?.fontSize, 56);
+    expect(headlineTheme?.fontFamily, 'Open Sans');
+  });
+
+  testWidgets('renders the compact mobile header without overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const CiBuilderApp());
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('CI BUILDER'), findsOneWidget);
+    expect(find.text('Projekt starten'), findsOneWidget);
+  });
+
+  testWidgets('opens the public imprint from the landing footer', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const CiBuilderApp());
+
+    await tester.tap(find.text('Nur notwendige verwenden'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Impressum'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Impressum'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Angaben gemäß § 5 DDG'), findsOneWidget);
+    expect(find.textContaining('Dr.-Theodor-Brugsch-Str. 12'), findsOneWidget);
+  });
+
+  testWidgets('shows privacy choices without optional preselection', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const CiBuilderApp());
+
+    expect(find.text('Privatsphäre-Einstellungen'), findsOneWidget);
+    await tester.tap(find.text('Einstellungen'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Technisch notwendig'), findsOneWidget);
+    expect(find.text('Statistik'), findsOneWidget);
+    expect(find.text('Nicht eingesetzt'), findsNWidgets(3));
+  });
+
+  testWidgets('opens the logo picker from the complete material card', (
+    tester,
+  ) async {
+    final picker = _FakeBrandAssetPicker(
+      const BrandAssetSelection(
+        name: 'marke.svg',
+        sizeBytes: 4200,
+        mimeType: 'image/svg+xml',
+        bytes: Uint8List(0),
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: BuilderHome(csrfToken: 'test', assetPicker: picker, projectCreator: _testProjectCreator)),
+    );
+    await _openMaterialStep(tester);
+
+    await tester.tap(find.byKey(const Key('onboarding.logoUpload')));
+    await tester.pumpAndSettle();
+
+    expect(picker.requestedKinds, [BrandAssetKind.logo]);
+    expect(find.text('marke.svg'), findsWidgets);
+    expect(find.text('Ausgewählt'), findsOneWidget);
+  });
+
+  testWidgets('material step can be skipped explicitly and reopened later', (
+    tester,
+  ) async {
+    final picker = _FakeBrandAssetPicker(null);
+
+    await tester.pumpWidget(
+      MaterialApp(home: BuilderHome(csrfToken: 'test', assetPicker: picker, projectCreator: _testProjectCreator)),
+    );
+    await _openMaterialStep(tester);
+
+    expect(find.text('Jetzt überspringen'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('onboarding.skipMaterial')));
+    await tester.pumpAndSettle();
+    expect(find.text('Deine editierbare Ausgangsbasis.'), findsOneWidget);
+
+    await tester.tap(find.text('Projektbasis erstellen'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('project.material.manage')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('project.material.manage')));
+    await tester.pumpAndSettle();
+    expect(find.text('Gib deiner Marke Material.'), findsOneWidget);
+    expect(find.byKey(const Key('onboarding.logoUpload')), findsOneWidget);
+  });
+
+  testWidgets('material flow stays usable on a narrow mobile viewport', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(home: BuilderHome(csrfToken: 'test', assetPicker: _FakeBrandAssetPicker(null), projectCreator: _testProjectCreator)),
+    );
+    await _openMaterialStep(tester);
+
+    expect(find.byKey(const Key('onboarding.logoUpload')), findsOneWidget);
+    expect(find.byKey(const Key('onboarding.skipMaterial')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('onboarding.skipMaterial')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Deine editierbare Ausgangsbasis.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+}
+
+Future<void> _openMaterialStep(WidgetTester tester) async {
+  await tester.ensureVisible(find.text('Projekt anlegen'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Projekt anlegen'));
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextField).first, 'Testprojekt');
+  await tester.tap(find.text('Weiter'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _testProjectCreator({required String name, required String company, required String description, required String fontFamily}) async {}
+
+class _FakeBrandAssetPicker implements BrandAssetPicker {
+  _FakeBrandAssetPicker(this.result);
+
+  final BrandAssetSelection? result;
+  final List<BrandAssetKind> requestedKinds = [];
+
+  @override
+  Future<BrandAssetSelection?> pick(BrandAssetKind kind) async {
+    requestedKinds.add(kind);
+    return result;
+  }
+}
