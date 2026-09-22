@@ -76,6 +76,8 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Die Versionskennung verhindert, dass alte Browser-Caches nach einem
+       sicherheitsrelevanten Release eine frühere Flutter-Startdatei nutzen. -->
+  <script src="flutter_bootstrap.js?release=20260922-pt03" async></script>
 </body>
 </html>

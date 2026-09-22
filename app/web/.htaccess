@@ -9,6 +9,15 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.html [L]
 
 <IfModule mod_headers.c>
+  # Flutter lädt diese Startdateien unter festen Namen. Ohne Revalidierung kann
+  # ein Browser nach einem Release noch eine alte Anmelde- oder Sicherheitsansicht
+  # zeigen. Bilder und Fonts dürfen weiterhin normal zwischengespeichert werden.
+  <FilesMatch "^(index\.html|flutter_bootstrap\.js|main\.dart\.js|flutter\.js|flutter_service_worker\.js)$">
+    Header always set Cache-Control "no-cache, no-store, must-revalidate"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+  </FilesMatch>
+
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"

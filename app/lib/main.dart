@@ -672,15 +672,18 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
-                TextButton(
-                  key: const Key('auth.forgotPassword'),
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const PasswordResetRequestPage(),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    key: const Key('auth.forgotPassword'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PasswordResetRequestPage(),
+                      ),
                     ),
+                    child: const Text('Passwort vergessen?'),
                   ),
-                  child: const Text('Passwort vergessen?'),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
