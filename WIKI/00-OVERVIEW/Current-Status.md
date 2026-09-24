@@ -44,7 +44,5 @@ gespeichert und nie serverseitig abgerufen.
 1. Designmanual-Editor mit Bereichen für Marke, Farbe, Typografie, Bildwelt, Tonalität und Social Media.
 2. Export als eigenständiges HTML-Projekt und als PDF.
 3. Administrierbare Landingpage-Inhalte und Übersetzungen.
-4. Kontrollierte Live-Migration `007_backoffice_billing_moderation` mit Backup,
-   lesendem Vorabcheck und Funktionsprüfung.
-5. Stripe-Testkatalog, signierte Webhooks, idempotente Entitlements, Kündigung
+4. Stripe-Testkatalog, signierte Webhooks, idempotente Entitlements, Kündigung
    und Erstattung vor Aktivierung von Abonnements.

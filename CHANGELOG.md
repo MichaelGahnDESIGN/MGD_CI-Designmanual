@@ -8,7 +8,9 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert. Das F
 
 - Tarifkatalog Free, Creator, Studio und Ultimate mit echtem Jahresvorteil;
   alle bestehenden Grundfunktionen bleiben im kostenlosen Tarif
-- vorbereitete, versionierte Backoffice-/Billing-/Moderationsmigration 007 mit
+- versionierte Backoffice-/Billing-/Moderationsmigration 007 am 24. September
+  2026 nach verschlüsselter Sicherung, lesendem Vorabcheck und
+  Funktionsprüfung produktiv angewendet; mit
   HMAC-gehashten Providerreferenzen, verschlüsseltem Audit und ohne
   Speicherung von Zahlungsinstrumenten oder Rechnungsdaten
 - capability-geschütztes Backoffice für Admin und Moderation; kritische

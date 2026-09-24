@@ -20,10 +20,11 @@ Der CI BUILDER ist eine Flutter-Webanwendung für Agenturen, Teams und Marken. E
 - Lokal ausgelieferte Open-Sans-Schrift und lokale Flutter-/CanvasKit-Ressourcen
 - Öffentliche Rechtstexte, Cookie-Einstellungen und kein externes Tracking
 
-Die nächste Freigabestufe ist die kontrollierte Migration des Backoffice-
-Schemas. Danach folgen der vollständige Manual-Editor, HTML-/PDF-Export und
-eine Stripe-gesicherte Abrechnung. Es gibt derzeit keinen Checkout und keine
-aktive Belastung.
+Die Backoffice-Migration 007 wurde am 24. September 2026 nach verschlüsselter
+Sicherung, lesendem Vorabcheck und Funktionsprüfung produktiv angewendet.
+Als Nächstes folgen der vollständige Manual-Editor, HTML-/PDF-Export und ein
+Stripe-Testkatalog mit signierten Webhooks. Es gibt derzeit keinen Checkout und
+keine aktive Belastung.
 
 ## Datenschutz und Sicherheit
 
