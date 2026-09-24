@@ -1075,6 +1075,7 @@ class BuilderHome extends StatefulWidget {
     required this.csrfToken,
     this.assetPicker,
     this.projectCreator,
+    this.profileLoader,
   });
 
   final String csrfToken;
@@ -1086,6 +1087,10 @@ class BuilderHome extends StatefulWidget {
     required String fontFamily,
   })?
   projectCreator;
+
+  /// Optionale Testnaht. Im Produkt lädt der AccountRepository das aktuelle,
+  /// authentifizierte Profil über die API.
+  final Future<AccountProfile> Function()? profileLoader;
 
   @override
   State<BuilderHome> createState() => _BuilderHomeState();
@@ -1117,6 +1122,8 @@ class _BuilderHomeState extends State<BuilderHome> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 1040;
+    final profile = _accountProfile;
+    final showBackofficeShortcut = profile?.canOpenBackoffice ?? false;
     return Scaffold(
       body: SafeArea(
         child: Row(
@@ -1124,7 +1131,7 @@ class _BuilderHomeState extends State<BuilderHome> {
             if (wide)
               _Sidebar(
                 selectedSection: _selectedSection,
-                showBackoffice: _accountProfile?.canOpenBackoffice ?? false,
+                showBackoffice: showBackofficeShortcut,
                 onSelected: (value) => setState(() => _selectedSection = value),
               ),
             Expanded(
@@ -1191,6 +1198,20 @@ class _BuilderHomeState extends State<BuilderHome> {
           ],
         ),
       ),
+      floatingActionButton: showBackofficeShortcut
+          ? Semantics(
+              button: true,
+              label: profile!.backofficeShortcutLabel,
+              child: FloatingActionButton.extended(
+                key: const Key('builder.backofficeShortcut'),
+                heroTag: 'builder.backofficeShortcut',
+                tooltip: profile.backofficeShortcutLabel,
+                onPressed: () => setState(() => _selectedSection = 3),
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                label: Text(profile.backofficeShortcutLabel),
+              ),
+            )
+          : null,
       bottomNavigationBar: wide
           ? null
           : NavigationBar(
@@ -1210,7 +1231,7 @@ class _BuilderHomeState extends State<BuilderHome> {
                   icon: Icon(Icons.person_outline_rounded),
                   label: 'Konto',
                 ),
-                if (_accountProfile?.canOpenBackoffice ?? false)
+                if (showBackofficeShortcut)
                   const NavigationDestination(
                     icon: Icon(Icons.admin_panel_settings_outlined),
                     label: 'Backoffice',
@@ -1273,7 +1294,9 @@ class _BuilderHomeState extends State<BuilderHome> {
 
   Future<void> _loadAccountProfile() async {
     try {
-      final profile = await _accountRepository.loadProfile();
+      final profile =
+          await (widget.profileLoader?.call() ??
+              _accountRepository.loadProfile());
       if (mounted) setState(() => _accountProfile = profile);
     } on AccountApiException {
       // Das reguläre Produkt bleibt bei einem temporären Profilfehler nutzbar.

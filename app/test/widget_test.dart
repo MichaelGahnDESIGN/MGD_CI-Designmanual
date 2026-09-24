@@ -7,6 +7,7 @@ import 'package:mgd_ci_builder/main.dart';
 import 'package:mgd_ci_builder/features/legal/legal_document.dart';
 import 'package:mgd_ci_builder/features/onboarding/brand_asset_picker.dart';
 import 'package:mgd_ci_builder/features/billing/plan_catalog.dart';
+import 'package:mgd_ci_builder/features/account/account_repository.dart';
 
 void main() {
   test('Tarifkatalog zeigt alle Tarife und einen echten Jahresvorteil', () {
@@ -109,6 +110,67 @@ void main() {
     );
 
     expect(find.byKey(const Key('builder.themeToggle')), findsOneWidget);
+  });
+
+  testWidgets('shows the admin backend shortcut only with server capability', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BuilderHome(
+          csrfToken: 'test',
+          profileLoader: () async => _profile(
+            roles: const ['admin'],
+            capabilities: const ['backoffice.access', 'billing.read'],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('builder.backofficeShortcut')), findsOneWidget);
+    expect(find.text('Zum Admin-Backend'), findsOneWidget);
+  });
+
+  testWidgets('labels a moderator shortcut without exposing billing access', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BuilderHome(
+          csrfToken: 'test',
+          profileLoader: () async => _profile(
+            roles: const ['moderator'],
+            capabilities: const [
+              'backoffice.access',
+              'moderation.case.read',
+              'moderation.case.manage',
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('builder.backofficeShortcut')), findsOneWidget);
+    expect(find.text('Zum Moderations-Backend'), findsOneWidget);
+    expect(find.text('Zum Admin-Backend'), findsNothing);
+  });
+
+  testWidgets('hides the backend shortcut without backoffice capability', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BuilderHome(
+          csrfToken: 'test',
+          profileLoader: () async => _profile(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('builder.backofficeShortcut')), findsNothing);
   });
 
   testWidgets('keeps the landing hierarchy compact on tablet viewports', (
@@ -353,6 +415,21 @@ Future<void> _testProjectCreator({
   required String description,
   required String fontFamily,
 }) async {}
+
+AccountProfile _profile({
+  List<String> roles = const [],
+  List<String> capabilities = const [],
+}) => AccountProfile(
+  username: 'test',
+  email: 'test@example.invalid',
+  planLabel: 'Free',
+  projectsUsed: 0,
+  projectsTotal: 1,
+  storageUsedBytes: 0,
+  storageTotalBytes: 100 * 1024 * 1024,
+  roles: roles,
+  capabilities: capabilities,
+);
 
 class _FakeBrandAssetPicker implements BrandAssetPicker {
   _FakeBrandAssetPicker(this.result);

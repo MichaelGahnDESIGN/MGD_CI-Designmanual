@@ -34,6 +34,11 @@ class AccountProfile {
   bool get canManageModeration =>
       capabilities.contains('moderation.case.manage');
 
+  /// Die Beschriftung wird aus serverseitig gelieferten Capabilities abgeleitet.
+  /// Sie verbessert nur die Navigation; die API prüft jede Berechtigung erneut.
+  String get backofficeShortcutLabel =>
+      canReadBilling ? 'Zum Admin-Backend' : 'Zum Moderations-Backend';
+
   factory AccountProfile.fromJson(Map<String, dynamic> json) {
     final user = json['user'] as Map<String, dynamic>;
     final plan = json['plan'] as Map<String, dynamic>;
