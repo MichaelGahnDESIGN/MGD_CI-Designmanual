@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'plan_catalog.dart';
+
 /// Transparente Angebotsübersicht ohne vorgetäuschten Kaufabschluss.
 ///
 /// Entitlements werden erst nach einem verifizierten Stripe-Webhook aktiviert.
 /// Bis Stripe-Preis-IDs, Webhook und Testmodus eingerichtet sind, zeigt diese
 /// Oberfläche bewusst nur die geplanten Optionen und löst keine Zahlung aus.
-class UpgradeOfferSheet extends StatelessWidget {
+class UpgradeOfferSheet extends StatefulWidget {
   const UpgradeOfferSheet({super.key});
 
   static Future<void> show(BuildContext context) => showModalBottomSheet<void>(
@@ -14,6 +16,13 @@ class UpgradeOfferSheet extends StatelessWidget {
     backgroundColor: Colors.transparent,
     builder: (_) => const UpgradeOfferSheet(),
   );
+
+  @override
+  State<UpgradeOfferSheet> createState() => _UpgradeOfferSheetState();
+}
+
+class _UpgradeOfferSheetState extends State<UpgradeOfferSheet> {
+  bool _annual = true;
 
   @override
   Widget build(BuildContext context) {
@@ -48,28 +57,31 @@ class UpgradeOfferSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Du hast alle verfügbaren Projektslots genutzt. Wähle künftig einen dauerhaften Extra-Slot oder einen Plan mit mehr Raum für dein Team.',
+              'Alle Grundlagen bleiben kostenlos. Zusätzliche Slots, Speicher, Varianten und Vorlagen kommen mit den Tarifen dazu.',
             ),
             const SizedBox(height: 22),
-            const _PlanTile(
-              title: 'Slot+',
-              price: '19 € einmalig',
-              detail: '+1 Projektslot · +100 MB privater Speicher',
-              accent: false,
+            Semantics(
+              label: 'Abrechnungszeitraum',
+              child: SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Monatlich')),
+                  ButtonSegment(value: true, label: Text('Jährlich')),
+                ],
+                selected: {_annual},
+                onSelectionChanged: (value) =>
+                    setState(() => _annual = value.single),
+              ),
             ),
-            const SizedBox(height: 10),
-            const _PlanTile(
-              title: 'Studio',
-              price: '12 € / Monat · 120 € / Jahr',
-              detail: '5 Projektslots · 500 MB · Vorlagen · Export',
-              accent: true,
-            ),
-            const SizedBox(height: 10),
-            const _PlanTile(
-              title: 'Agentur',
-              price: '29 € / Monat · 290 € / Jahr',
-              detail: '20 Projektslots · 1,5 GB · Teamzugänge · Vorlagen',
-              accent: false,
+            const SizedBox(height: 16),
+            ...PlanCatalog.publicPlans.map(
+              (plan) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _PlanTile(
+                  plan: plan,
+                  annual: _annual,
+                  accent: plan.slug == 'studio',
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             Text(
@@ -78,7 +90,7 @@ class UpgradeOfferSheet extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Zahlungen werden erst nach Einrichtung von Stripe Checkout, Preis-IDs und signierter Webhook-Prüfung aktiviert. Bis dahin entstehen durch diese Auswahl keine Kosten und keine neuen Berechtigungen.',
+              'Zahlungen werden erst nach Einrichtung von Stripe Checkout, Test-Preis-IDs und signierter Webhook-Prüfung aktiviert. Bis dahin entstehen durch diese Ansicht keine Kosten und keine neuen Berechtigungen.',
             ),
           ],
         ),
@@ -89,15 +101,13 @@ class UpgradeOfferSheet extends StatelessWidget {
 
 class _PlanTile extends StatelessWidget {
   const _PlanTile({
-    required this.title,
-    required this.price,
-    required this.detail,
+    required this.plan,
+    required this.annual,
     required this.accent,
   });
 
-  final String title;
-  final String price;
-  final String detail;
+  final PlanDefinition plan;
+  final bool annual;
   final bool accent;
 
   @override
@@ -115,13 +125,53 @@ class _PlanTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  plan.name,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              if (annual && plan.annualSavingsPercent > 0)
+                Chip(
+                  visualDensity: VisualDensity.compact,
+                  label: Text('${plan.annualSavingsPercent}% sparen'),
+                ),
+            ],
+          ),
           const SizedBox(height: 4),
-          Text(price, style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(
+            _priceLabel(plan, annual),
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 6),
-          Text(detail),
+          Text(_details(plan)),
+          if (plan.includesAllCoreFeatures) ...[
+            const SizedBox(height: 6),
+            const Text('Alle Grundfunktionen inklusive.'),
+          ],
+          if (!plan.isAvailable && plan.isPaid) ...[
+            const SizedBox(height: 8),
+            const Text('Noch nicht buchbar – unverbindliche Vorschau.'),
+          ],
         ],
       ),
     );
+  }
+
+  String _priceLabel(PlanDefinition value, bool annual) {
+    if (!value.isPaid) return '0 €';
+    final cents = annual ? value.yearlyPriceCents : value.monthlyPriceCents;
+    final euros = (cents / 100).toStringAsFixed(0);
+    return annual ? '$euros € / Jahr' : '$euros € / Monat';
+  }
+
+  String _details(PlanDefinition value) {
+    final storage = value.storageBytes >= 1024 * 1024 * 1024
+        ? '${(value.storageBytes / (1024 * 1024 * 1024)).toStringAsFixed(value.storageBytes % (1024 * 1024 * 1024) == 0 ? 0 : 1)} GB'
+        : '${value.storageBytes ~/ (1024 * 1024)} MB';
+    return '${value.projectSlots} Projektslots · $storage · '
+        '${value.logoVariants} Logo-Varianten · ${value.templates} Vorlagen';
   }
 }

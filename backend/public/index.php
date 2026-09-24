@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/lib/BackofficePolicy.php';
+
 /**
  * Same-origin API entry point for the CI BUILDER Flutter web application.
  * It is dependency-free for shared hosting and intentionally exposes no
@@ -301,6 +303,117 @@ function requireCapability(PDO $pdo, array $session, string $capability): void {
     }
 }
 
+/** @return list<string> */
+function capabilitiesForUser(PDO $pdo, string $userId): array {
+    $statement = $pdo->prepare('SELECT DISTINCT c.`key` FROM user_roles ur JOIN role_capabilities rc ON rc.role_id = ur.role_id JOIN capabilities c ON c.id = rc.capability_id WHERE ur.user_id = ? ORDER BY c.`key`');
+    $statement->execute([$userId]);
+    return array_map(static fn(array $row): string => (string) $row['key'], $statement->fetchAll());
+}
+
+/** @return list<string> */
+function rolesForUser(PDO $pdo, string $userId): array {
+    $statement = $pdo->prepare('SELECT r.slug FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? ORDER BY r.slug');
+    $statement->execute([$userId]);
+    return array_map(static fn(array $row): string => (string) $row['slug'], $statement->fetchAll());
+}
+
+/** Die neuen Tabellen dürfen vor der freigegebenen Migration keinen Fehler auslösen. */
+function tableAvailable(PDO $pdo, string $table): bool {
+    $statement = $pdo->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ? LIMIT 1');
+    $statement->execute([$table]);
+    return (bool) $statement->fetchColumn();
+}
+
+function requireBackofficeSchema(PDO $pdo): void {
+    if (!tableAvailable($pdo, 'billing_plans') || !tableAvailable($pdo, 'moderation_cases')) {
+        respond(503, ['error' => 'backoffice_not_ready']);
+    }
+}
+
+/**
+ * Der Audit-Log enthält nie Passwort, E-Mail oder Zahlungsreferenzen im Klartext.
+ * Die verschlüsselten Metadaten dienen ausschließlich der späteren Prüfung von
+ * privilegierten Handlungen und werden nicht pauschal an Moderation ausgegeben.
+ *
+ * @param array<string, scalar|null> $metadata
+ */
+function auditEvent(PDO $pdo, array $config, ?string $actorUserId, string $eventType, ?string $targetType = null, ?string $targetId = null, array $metadata = []): void {
+    [$ciphertext, $nonce, $tag] = encryptValue($config, json_encode($metadata, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+    $statement = $pdo->prepare('INSERT INTO audit_events (id, actor_user_id, event_type, target_type, target_id, ip_hash, metadata_ciphertext, metadata_key_version) VALUES (?, ?, ?, ?, ?, ?, ?, 1)');
+    $statement->execute([
+        uuidV7(),
+        $actorUserId,
+        $eventType,
+        $targetType,
+        $targetId,
+        lookupHash($config, requestIp()),
+        $ciphertext,
+    ]);
+}
+
+/** @return array<string, int|bool|string> */
+function effectivePlanForUser(PDO $pdo, string $userId): array {
+    $plans = ciDefaultPlanCatalog();
+    $plan = $plans['free'];
+    if (tableAvailable($pdo, 'account_entitlements')) {
+        $statement = $pdo->prepare("SELECT bp.slug, bp.label, bp.project_slots, bp.storage_bytes, bp.logo_variant_limit, bp.font_family_limit, bp.template_limit, bp.core_features_included, bp.is_available FROM account_entitlements ae JOIN billing_plans bp ON bp.slug = ae.plan_slug WHERE ae.user_id = ? AND ae.status = 'active' AND ae.starts_at <= UTC_TIMESTAMP(6) AND (ae.ends_at IS NULL OR ae.ends_at > UTC_TIMESTAMP(6)) ORDER BY bp.project_slots DESC LIMIT 1");
+        $statement->execute([$userId]);
+        $active = $statement->fetch();
+        if (is_array($active)) {
+            $plan = [
+                ...$plan,
+                'slug' => (string) $active['slug'],
+                'label' => (string) $active['label'],
+                'project_slots' => (int) $active['project_slots'],
+                'storage_bytes' => (int) $active['storage_bytes'],
+                'logo_variant_limit' => (int) $active['logo_variant_limit'],
+                'font_family_limit' => (int) $active['font_family_limit'],
+                'template_limit' => (int) $active['template_limit'],
+                'core_features_included' => (bool) $active['core_features_included'],
+                'available' => (bool) $active['is_available'],
+            ];
+        }
+    }
+    // Bestehende Gratis-/Empfehlungs-Slots bleiben beim Upgrade erhalten, aber
+    // addieren sich nicht zu bezahlten Plan-Slots. Der höhere Wert gewinnt.
+    $slots = $pdo->prepare('SELECT COUNT(*) FROM project_slot_grants WHERE user_id = ? AND revoked_at IS NULL');
+    $slots->execute([$userId]);
+    $grantSlots = max(1, (int) $slots->fetchColumn());
+    $plan['project_slots'] = max((int) $plan['project_slots'], $grantSlots);
+    if ($plan['slug'] === 'free') {
+        $plan['storage_bytes'] = max((int) $plan['storage_bytes'], $grantSlots * 100 * 1024 * 1024);
+    }
+    return $plan;
+}
+
+/** @return list<array<string, int|bool|string>> */
+function publicPlanCatalog(PDO $pdo): array {
+    if (!tableAvailable($pdo, 'billing_plans')) {
+        return array_values(ciDefaultPlanCatalog());
+    }
+    $rows = $pdo->query('SELECT slug, label, monthly_price_cents, yearly_price_cents, currency, project_slots, storage_bytes, logo_variant_limit, font_family_limit, template_limit, core_features_included, is_available FROM billing_plans WHERE is_public = 1 ORDER BY sort_order')->fetchAll();
+    return array_map(static fn(array $row): array => [
+        'slug' => (string) $row['slug'], 'label' => (string) $row['label'],
+        'monthly_price_cents' => (int) $row['monthly_price_cents'], 'yearly_price_cents' => (int) $row['yearly_price_cents'],
+        'currency' => (string) $row['currency'], 'project_slots' => (int) $row['project_slots'],
+        'storage_bytes' => (int) $row['storage_bytes'], 'logo_variant_limit' => (int) $row['logo_variant_limit'],
+        'font_family_limit' => (int) $row['font_family_limit'], 'template_limit' => (int) $row['template_limit'],
+        'core_features_included' => (bool) $row['core_features_included'], 'available' => (bool) $row['is_available'],
+    ], $rows);
+}
+
+/** Privilegierte Kontoaktionen verlangen zusätzlich das aktuelle Admin-Kennwort. */
+function requireFreshAdminPassword(PDO $pdo, array $config, array $session, array $body): void {
+    $password = text($body, 'current_password', 1024);
+    enforceRateLimit($pdo, $config, 'admin-reauth', uuidText($session['user_id']), 5, 15);
+    $statement = $pdo->prepare('SELECT password_hash FROM users WHERE id = ? LIMIT 1');
+    $statement->execute([$session['user_id']]);
+    $hash = $statement->fetchColumn();
+    if (!is_string($hash) || !password_verify($password, $hash)) {
+        respond(401, ['error' => 'reauth_required']);
+    }
+}
+
 function createSession(PDO $pdo, array $config, string $userId): array {
     $token = bin2hex(random_bytes(32));
     $csrf = bin2hex(random_bytes(32));
@@ -417,11 +530,9 @@ if ($method === 'GET' && $path === '/auth/me') {
     $profileData = $profile->fetch();
     if (!$profileData) respond(401, ['error' => 'unauthenticated']);
 
-    // Der Plan wird bis zur Stripe-Anbindung bewusst serverseitig als
-    // Freemium-Entitlement berechnet. Der Client darf nie Slots ableiten.
-    $slotStatement = $pdo->prepare('SELECT COUNT(*) FROM project_slot_grants WHERE user_id = ? AND revoked_at IS NULL');
-    $slotStatement->execute([$session['user_id']]);
-    $slotsTotal = (int) $slotStatement->fetchColumn();
+    // Der Plan wird ausschließlich serverseitig bestimmt. Der Client erhält
+    // nur eine Momentaufnahme und kann keine Slots oder Speicher erzwingen.
+    $effectivePlan = effectivePlanForUser($pdo, $session['user_id']);
     $projectStatement = $pdo->prepare("SELECT COUNT(*) FROM projects WHERE owner_user_id = ? AND status != 'deleted'");
     $projectStatement->execute([$session['user_id']]);
     $projectsUsed = (int) $projectStatement->fetchColumn();
@@ -434,17 +545,27 @@ if ($method === 'GET' && $path === '/auth/me') {
             'username' => decryptValue($config, $profileData['username_ciphertext'], $profileData['username_nonce'], $profileData['username_auth_tag']),
             'email' => decryptValue($config, $profileData['email_ciphertext'], $profileData['email_nonce'], $profileData['email_auth_tag']),
             'must_change_password' => (bool) $session['must_change_password'],
+            'roles' => rolesForUser($pdo, $session['user_id']),
+            'capabilities' => capabilitiesForUser($pdo, $session['user_id']),
         ],
         'plan' => [
-            'key' => 'free',
-            'label' => 'Kostenlos',
+            'key' => $effectivePlan['slug'],
+            'label' => $effectivePlan['label'],
             'projects_used' => $projectsUsed,
-            'projects_total' => $slotsTotal,
-            // Ein Slot umfasst derzeit 100 MB privaten Medien-Speicher.
+            'projects_total' => $effectivePlan['project_slots'],
             'storage_used_bytes' => $storageUsed,
-            'storage_total_bytes' => max($slotsTotal, 1) * 100 * 1024 * 1024,
+            'storage_total_bytes' => $effectivePlan['storage_bytes'],
+            'logo_variant_limit' => $effectivePlan['logo_variant_limit'],
+            'font_family_limit' => $effectivePlan['font_family_limit'],
+            'template_limit' => $effectivePlan['template_limit'],
         ],
     ]);
+}
+
+// Öffentliche, vorvertragliche Preisübersicht. Sie enthält keine Stripe-IDs,
+// keine Checkout-Adresse und kann daher keine Zahlung auslösen.
+if ($method === 'GET' && $path === '/billing/plans') {
+    respond(200, ['plans' => publicPlanCatalog($pdo)]);
 }
 
 if ($method === 'POST' && $path === '/auth/change-password') {
@@ -607,9 +728,12 @@ if ($method === 'POST' && $path === '/projects') {
     if ($name === '' || !in_array($fontFamily, ['Open Sans', 'Lato', 'Montserrat', 'Merriweather'], true)) {
         respond(422, ['error' => 'invalid_project']);
     }
-    $slots = $pdo->prepare("SELECT (SELECT COUNT(*) FROM project_slot_grants WHERE user_id = ? AND revoked_at IS NULL) - (SELECT COUNT(*) FROM projects WHERE owner_user_id = ? AND status != 'deleted')");
-    $slots->execute([$session['user_id'], $session['user_id']]);
-    if ((int) $slots->fetchColumn() < 1) respond(403, ['error' => 'project_slot_limit']);
+    $effectivePlan = effectivePlanForUser($pdo, $session['user_id']);
+    $projectsUsed = $pdo->prepare("SELECT COUNT(*) FROM projects WHERE owner_user_id = ? AND status != 'deleted'");
+    $projectsUsed->execute([$session['user_id']]);
+    if ((int) $projectsUsed->fetchColumn() >= (int) $effectivePlan['project_slots']) {
+        respond(403, ['error' => 'project_slot_limit']);
+    }
     [$nameCiphertext, $nameNonce, $nameTag] = encryptValue($config, $name);
     [$companyCiphertext, $companyNonce, $companyTag] = encryptValue($config, $company);
     [$descriptionCiphertext, $descriptionNonce, $descriptionTag] = encryptValue($config, $description);
@@ -661,9 +785,14 @@ if (preg_match('#^/projects/([0-9a-f-]{36})/media$#i', $path, $matches) && $meth
         respond(422, ['error' => 'invalid_upload']);
     }
     [$mime, $extension, $size] = validatedImageUpload($_FILES['file']);
-    $quota = $pdo->prepare('SELECT COALESCE(SUM(byte_size), 0) FROM media_assets WHERE project_id = ? AND deleted_at IS NULL');
-    $quota->execute([$projectId]);
-    if ((int) $quota->fetchColumn() + $size > 100 * 1024 * 1024) respond(422, ['error' => 'project_media_quota_exceeded']);
+    // Speicher gilt pro Konto statt pro Projekt. Das verhindert, dass ein
+    // Tarif über viele kleine Projekte umgangen wird.
+    $effectivePlan = effectivePlanForUser($pdo, $session['user_id']);
+    $quota = $pdo->prepare("SELECT COALESCE(SUM(ma.byte_size), 0) FROM media_assets ma JOIN projects p ON p.id = ma.project_id WHERE p.owner_user_id = ? AND p.status != 'deleted' AND ma.deleted_at IS NULL");
+    $quota->execute([$session['user_id']]);
+    if ((int) $quota->fetchColumn() + $size > (int) $effectivePlan['storage_bytes']) {
+        respond(422, ['error' => 'account_media_quota_exceeded']);
+    }
     $storageKey = bin2hex(random_bytes(24)) . '.' . $extension;
     $destination = mediaStorageRoot($config) . DIRECTORY_SEPARATOR . $storageKey;
     if (!move_uploaded_file($_FILES['file']['tmp_name'], $destination)) throw new RuntimeException('Upload move failed');
@@ -719,6 +848,187 @@ if (preg_match('#^/projects/([0-9a-f-]{36})/media/([0-9a-f-]{36})$#i', $path, $m
     $file = mediaStorageRoot($config) . DIRECTORY_SEPARATOR . $storageKey;
     if (is_file($file)) @unlink($file);
     respond(204, []);
+}
+
+/** Backoffice: nur nach serverseitiger Fähigkeit und ausgeführter Migration. */
+if ($method === 'GET' && $path === '/backoffice/overview') {
+    $session = authenticated($pdo, $config);
+    requireCapability($pdo, $session, 'backoffice.access');
+    requireBackofficeSchema($pdo);
+    $users = (int) $pdo->query("SELECT COUNT(*) FROM users WHERE status != 'deleted'")->fetchColumn();
+    $projects = (int) $pdo->query("SELECT COUNT(*) FROM projects WHERE status != 'deleted'")->fetchColumn();
+    $openCases = (int) $pdo->query("SELECT COUNT(*) FROM moderation_cases WHERE status IN ('open', 'in_review')")->fetchColumn();
+    $testTransactions = (int) $pdo->query("SELECT COUNT(*) FROM billing_transactions WHERE provider_mode = 'test'")->fetchColumn();
+    $liveTransactions = (int) $pdo->query("SELECT COUNT(*) FROM billing_transactions WHERE provider_mode = 'live'")->fetchColumn();
+    respond(200, [
+        'role' => in_array('admin', rolesForUser($pdo, $session['user_id']), true) ? 'admin' : 'moderator',
+        'metrics' => [
+            'accounts' => $users, 'projects' => $projects, 'open_cases' => $openCases,
+            'test_transactions' => $testTransactions, 'live_transactions' => $liveTransactions,
+        ],
+    ]);
+}
+
+if ($method === 'GET' && $path === '/backoffice/plans') {
+    $session = authenticated($pdo, $config);
+    requireCapability($pdo, $session, 'billing.read');
+    requireBackofficeSchema($pdo);
+    respond(200, ['plans' => publicPlanCatalog($pdo)]);
+}
+
+if (preg_match('#^/backoffice/plans/(free|creator|studio|ultimate)$#', $path, $matches) && $method === 'PUT') {
+    $session = authenticated($pdo, $config);
+    requireCsrf($session);
+    requireCapability($pdo, $session, 'billing.catalog.manage');
+    requireBackofficeSchema($pdo);
+    $body = requestBody();
+    requireFreshAdminPassword($pdo, $config, $session, $body);
+    $reason = text($body, 'reason', 240);
+    if (mb_strlen($reason) < 8) respond(422, ['error' => 'reason_required']);
+    $monthly = $body['monthly_price_cents'] ?? null;
+    $yearly = $body['yearly_price_cents'] ?? null;
+    $available = $body['is_available'] ?? null;
+    if (!is_int($monthly) || !is_int($yearly) || $monthly < 0 || $yearly < 0 || $yearly > $monthly * 12 || !is_bool($available)) {
+        respond(422, ['error' => 'invalid_plan']);
+    }
+    $statement = $pdo->prepare('UPDATE billing_plans SET monthly_price_cents = ?, yearly_price_cents = ?, is_available = ? WHERE slug = ?');
+    $statement->execute([$monthly, $yearly, $available ? 1 : 0, $matches[1]]);
+    auditEvent($pdo, $config, $session['user_id'], 'billing.plan.updated', 'billing_plan', null, ['plan' => $matches[1], 'reason' => $reason]);
+    respond(200, ['status' => 'updated']);
+}
+
+if ($method === 'GET' && $path === '/backoffice/billing/transactions') {
+    $session = authenticated($pdo, $config);
+    requireCapability($pdo, $session, 'billing.read');
+    requireBackofficeSchema($pdo);
+    // Keine Provider-Referenzen, Kundendaten oder Zahlungsinstrumente im UI.
+    $rows = $pdo->query('SELECT id, plan_slug, provider, provider_mode, transaction_kind, status, amount_cents, currency, occurred_at FROM billing_transactions ORDER BY occurred_at DESC LIMIT 100')->fetchAll();
+    $transactions = array_map(static fn(array $row): array => [
+        'id' => uuidText($row['id']), 'plan' => $row['plan_slug'], 'provider' => $row['provider'],
+        'mode' => $row['provider_mode'], 'kind' => $row['transaction_kind'], 'status' => $row['status'],
+        'amount_cents' => (int) $row['amount_cents'], 'currency' => $row['currency'], 'occurred_at' => $row['occurred_at'],
+    ], $rows);
+    respond(200, ['transactions' => $transactions]);
+}
+
+if ($method === 'GET' && $path === '/backoffice/moderation/cases') {
+    $session = authenticated($pdo, $config);
+    requireCapability($pdo, $session, 'moderation.case.read');
+    requireBackofficeSchema($pdo);
+    $rows = $pdo->query('SELECT id, subject_type, category, priority, status, description_ciphertext, description_nonce, description_auth_tag, resolution_ciphertext, resolution_nonce, resolution_auth_tag, assigned_to_user_id, created_at, updated_at FROM moderation_cases ORDER BY FIELD(status, \'open\', \'in_review\', \'resolved\', \'closed\'), updated_at DESC LIMIT 100')->fetchAll();
+    $cases = array_map(static function (array $row) use ($config, $session): array {
+        return [
+            'id' => uuidText($row['id']), 'subject_type' => $row['subject_type'], 'category' => $row['category'],
+            'priority' => $row['priority'], 'status' => $row['status'],
+            'description' => $row['description_ciphertext'] === null ? '' : decryptValue($config, $row['description_ciphertext'], $row['description_nonce'], $row['description_auth_tag']),
+            'resolution' => $row['resolution_ciphertext'] === null ? '' : decryptValue($config, $row['resolution_ciphertext'], $row['resolution_nonce'], $row['resolution_auth_tag']),
+            'assigned_to_me' => $row['assigned_to_user_id'] !== null && hash_equals($row['assigned_to_user_id'], $session['user_id']),
+            'created_at' => $row['created_at'], 'updated_at' => $row['updated_at'],
+        ];
+    }, $rows);
+    respond(200, ['cases' => $cases]);
+}
+
+if ($method === 'POST' && $path === '/backoffice/moderation/cases') {
+    $session = authenticated($pdo, $config);
+    requireCsrf($session);
+    requireCapability($pdo, $session, 'moderation.case.manage');
+    requireBackofficeSchema($pdo);
+    $body = requestBody();
+    $subjectType = text($body, 'subject_type', 16);
+    $category = text($body, 'category', 64);
+    $priority = text($body, 'priority', 16);
+    $description = text($body, 'description', 1000);
+    if (!in_array($subjectType, ['account', 'project', 'content'], true) || $category === '' || !in_array($priority, ['low', 'normal', 'high'], true)) respond(422, ['error' => 'invalid_case']);
+    [$ciphertext, $nonce, $tag] = $description === '' ? [null, null, null] : encryptValue($config, $description);
+    $caseId = uuidV7();
+    $insert = $pdo->prepare('INSERT INTO moderation_cases (id, subject_type, category, priority, description_ciphertext, description_nonce, description_auth_tag, opened_by_user_id, assigned_to_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    $insert->execute([$caseId, $subjectType, $category, $priority, $ciphertext, $nonce, $tag, $session['user_id'], $session['user_id']]);
+    auditEvent($pdo, $config, $session['user_id'], 'moderation.case.created', 'moderation_case', $caseId, ['category' => $category, 'priority' => $priority]);
+    respond(201, ['case' => ['id' => uuidText($caseId), 'status' => 'open']]);
+}
+
+if (preg_match('#^/backoffice/moderation/cases/([0-9a-f-]{36})$#i', $path, $matches) && $method === 'PATCH') {
+    $session = authenticated($pdo, $config);
+    requireCsrf($session);
+    requireCapability($pdo, $session, 'moderation.case.manage');
+    requireBackofficeSchema($pdo);
+    $body = requestBody();
+    $status = text($body, 'status', 16);
+    $resolution = text($body, 'resolution', 1000);
+    if (!in_array($status, ['open', 'in_review', 'resolved', 'closed'], true) || (($status === 'resolved' || $status === 'closed') && mb_strlen($resolution) < 8)) {
+        respond(422, ['error' => 'invalid_case_update']);
+    }
+    $caseId = uuidBinary($matches[1]);
+    [$ciphertext, $nonce, $tag] = $resolution === '' ? [null, null, null] : encryptValue($config, $resolution);
+    $statement = $pdo->prepare("UPDATE moderation_cases SET status = ?, resolution_ciphertext = ?, resolution_nonce = ?, resolution_auth_tag = ?, assigned_to_user_id = ?, resolved_by_user_id = CASE WHEN ? IN ('resolved', 'closed') THEN ? ELSE NULL END, resolved_at = CASE WHEN ? IN ('resolved', 'closed') THEN UTC_TIMESTAMP(6) ELSE NULL END WHERE id = ?");
+    $statement->execute([$status, $ciphertext, $nonce, $tag, $session['user_id'], $status, $session['user_id'], $status, $caseId]);
+    if ($statement->rowCount() !== 1) respond(404, ['error' => 'not_found']);
+    auditEvent($pdo, $config, $session['user_id'], 'moderation.case.updated', 'moderation_case', $caseId, ['status' => $status]);
+    respond(200, ['status' => 'updated']);
+}
+
+if ($method === 'GET' && $path === '/backoffice/accounts') {
+    $session = authenticated($pdo, $config);
+    requireCapability($pdo, $session, 'users.manage');
+    requireBackofficeSchema($pdo);
+    // Minimalprinzip: keine E-Mail-Adressen. Die UUID dient nur der gezielten
+    // Admin-Aktion, sichtbare Rollen und Status erklären den Kontozustand.
+    $rows = $pdo->query("SELECT u.id, u.status, u.created_at, GROUP_CONCAT(r.slug ORDER BY r.slug SEPARATOR ',') AS roles FROM users u LEFT JOIN user_roles ur ON ur.user_id = u.id LEFT JOIN roles r ON r.id = ur.role_id WHERE u.status != 'deleted' GROUP BY u.id, u.status, u.created_at ORDER BY u.created_at DESC LIMIT 100")->fetchAll();
+    $accounts = array_map(static fn(array $row): array => ['id' => uuidText($row['id']), 'status' => $row['status'], 'roles' => $row['roles'] === null ? [] : explode(',', $row['roles']), 'created_at' => $row['created_at']], $rows);
+    respond(200, ['accounts' => $accounts]);
+}
+
+if (preg_match('#^/backoffice/accounts/([0-9a-f-]{36})/(role|status)$#i', $path, $matches) && $method === 'PUT') {
+    $session = authenticated($pdo, $config);
+    requireCsrf($session);
+    requireBackofficeSchema($pdo);
+    $body = requestBody();
+    $targetId = uuidBinary($matches[1]);
+    if (hash_equals($targetId, $session['user_id'])) respond(422, ['error' => 'self_service_forbidden']);
+    $reason = text($body, 'reason', 240);
+    if (mb_strlen($reason) < 8) respond(422, ['error' => 'reason_required']);
+    $targetAdmin = hasCapability($pdo, $targetId, 'admin.access');
+    if ($targetAdmin) respond(403, ['error' => 'admin_target_protected']);
+    if ($matches[2] === 'role') {
+        requireCapability($pdo, $session, 'roles.manage');
+        requireFreshAdminPassword($pdo, $config, $session, $body);
+        $role = text($body, 'role', 16);
+        if (!in_array($role, ['member', 'moderator'], true)) respond(422, ['error' => 'invalid_role']);
+        $roleId = $pdo->prepare('SELECT id FROM roles WHERE slug = ? LIMIT 1');
+        $roleId->execute([$role]);
+        $resolvedRoleId = $roleId->fetchColumn();
+        if (!is_string($resolvedRoleId)) throw new RuntimeException('Role seed unavailable');
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare("DELETE ur FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND r.slug = 'moderator'")->execute([$targetId]);
+            if ($role === 'moderator') $pdo->prepare('INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)')->execute([$targetId, $resolvedRoleId]);
+            $pdo->commit();
+        } catch (Throwable $error) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $error;
+        }
+        auditEvent($pdo, $config, $session['user_id'], 'account.role.updated', 'account', $targetId, ['role' => $role, 'reason' => $reason]);
+        respond(200, ['status' => 'updated']);
+    }
+    requireCapability($pdo, $session, 'users.status.manage');
+    requireFreshAdminPassword($pdo, $config, $session, $body);
+    $status = text($body, 'status', 16);
+    if (!in_array($status, ['active', 'locked'], true)) respond(422, ['error' => 'invalid_status']);
+    $update = $pdo->prepare('UPDATE users SET status = ? WHERE id = ?');
+    $update->execute([$status, $targetId]);
+    if ($update->rowCount() !== 1) respond(404, ['error' => 'not_found']);
+    if ($status === 'locked') $pdo->prepare('UPDATE auth_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE user_id = ? AND revoked_at IS NULL')->execute([$targetId]);
+    auditEvent($pdo, $config, $session['user_id'], 'account.status.updated', 'account', $targetId, ['status' => $status, 'reason' => $reason]);
+    respond(200, ['status' => 'updated']);
+}
+
+if ($method === 'GET' && $path === '/backoffice/audit') {
+    $session = authenticated($pdo, $config);
+    requireCapability($pdo, $session, 'security.audit.read');
+    requireBackofficeSchema($pdo);
+    $rows = $pdo->query('SELECT id, event_type, target_type, occurred_at FROM audit_events ORDER BY occurred_at DESC LIMIT 100')->fetchAll();
+    respond(200, ['events' => array_map(static fn(array $row): array => ['id' => uuidText($row['id']), 'event_type' => $row['event_type'], 'target_type' => $row['target_type'], 'occurred_at' => $row['occurred_at']], $rows)]);
 }
 
 if ($method === 'POST' && $path === '/cms/landing') {

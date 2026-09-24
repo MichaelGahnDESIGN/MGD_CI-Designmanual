@@ -19,6 +19,10 @@ Browser → Flutter Webapp → HTTPS / Same-Origin API → privates Backend
 - **Server entscheidet:** Berechtigungen, Projektslots und Käufe prüft ausschließlich das Backend.
 - **Local assets:** Produkt-Fonts, Icons und eigene Medien werden lokal ausgeliefert. Keine Google-Font- oder Icon-CDNs.
 - **Privacy by default:** Nur notwendige Daten erheben, standardmäßig privat halten und feste Löschfristen definieren.
+- **Least Privilege:** Backoffice-Rollen sind serverseitige Capability-Bundles;
+  Moderation sieht weder Zahlungsdaten noch private Projektmedien.
+- **Entitlements statt Client-Flags:** Tarife und Speicherquoten werden nur
+  aus einer serverseitigen, zeitlich begrenzten Berechtigung abgeleitet.
 
 ## Schichten
 

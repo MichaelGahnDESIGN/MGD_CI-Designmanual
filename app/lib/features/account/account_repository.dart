@@ -15,6 +15,8 @@ class AccountProfile {
     required this.projectsTotal,
     required this.storageUsedBytes,
     required this.storageTotalBytes,
+    required this.roles,
+    required this.capabilities,
   });
 
   final String username;
@@ -24,6 +26,13 @@ class AccountProfile {
   final int projectsTotal;
   final int storageUsedBytes;
   final int storageTotalBytes;
+  final List<String> roles;
+  final List<String> capabilities;
+
+  bool get canOpenBackoffice => capabilities.contains('backoffice.access');
+  bool get canReadBilling => capabilities.contains('billing.read');
+  bool get canManageModeration =>
+      capabilities.contains('moderation.case.manage');
 
   factory AccountProfile.fromJson(Map<String, dynamic> json) {
     final user = json['user'] as Map<String, dynamic>;
@@ -36,6 +45,12 @@ class AccountProfile {
       projectsTotal: plan['projects_total'] as int,
       storageUsedBytes: plan['storage_used_bytes'] as int,
       storageTotalBytes: plan['storage_total_bytes'] as int,
+      roles: (user['roles'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .toList(growable: false),
+      capabilities: (user['capabilities'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .toList(growable: false),
     );
   }
 }

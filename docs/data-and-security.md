@@ -82,6 +82,23 @@ Anwendungslogs.
 
 Die erste Migration wird idempotent und in einer `schema_migrations`-Tabelle protokolliert. Vor dem ersten produktiven Lauf gelten: verschlüsseltes Backup, lesender Verbindungscheck, dry-run der Migration, dokumentierter Rückweg und ausdrückliche Freigabe. Es werden keine Testkonten oder Beispieldaten in der Live-Datenbank angelegt.
 
+### Backoffice, Tarife und Zahlungsdaten
+
+Migration `007_backoffice_billing_moderation.sql` ergänzt einen versionierten
+Tarifkatalog, wirksame Entitlements, eine Zahlungsereignis-Übersicht und
+Moderationsfälle. Sie speichert ausdrücklich **keine** Karte, IBAN,
+Rechnungsanschrift, Stripe-Customer-ID oder Klartext-Providerreferenz.
+Webhook- und Transaktionsreferenzen werden nur als HMAC-Hash abgelegt, damit
+Stripe-Ereignisse idempotent behandelt werden können. Admin-Änderungen an
+Tarif, Kontostatus und Moderationsentscheidungen brauchen CSRF, Capability,
+einen Grund, bei Konto- und Tarifänderungen zusätzlich das aktuelle
+Admin-Kennwort, und erzeugen ein verschlüsseltes Audit-Event.
+
+Die Rollen sind fest getrennt: `moderator` darf nur Moderationsfälle lesen und
+bearbeiten; `admin` kann zusätzlich Backoffice, Tarifkatalog, Zahlungsübersicht
+und Kontoverwaltung nutzen. Das Flutter-Menü ist nur Orientierung – die API
+prüft jede Capability erneut und arbeitet bei fehlendem Schema fail-closed.
+
 ## Datenschutz by design
 
 Die DSGVO verlangt unter anderem Zweckbindung, Datenminimierung und Speicherbegrenzung sowie geeignete technische und organisatorische Maßnahmen. Datenschutz durch Technikgestaltung und datenschutzfreundliche Voreinstellungen sind ausdrücklich vorgesehen. [DSGVO Art. 5, 25 und 32](https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=celex%3A32016R0679)
@@ -104,3 +121,10 @@ Abonnements und Einmal-Slots bleiben bis zu Stripe-Testmodus, Preis-IDs,
 signierter Webhook-Prüfung, idempotenter Event-Verarbeitung und
 Erstattungslogik deaktiviert. Die aktuelle Tarifansicht löst daher weder eine
 Zahlung noch eine Berechtigungsänderung aus.
+
+Für CI BUILDER wird kein Stripe-Connect-Unterkonto benötigt: Connect ist für
+Marktplätze bzw. Auszahlungen an Dritte gedacht. Zunächst wird im bestehenden
+Stripe-Konto ein strikt getrennter **Testmodus-Katalog** eingerichtet. Erst
+nach erfolgreichem Testlauf und gesonderter Freigabe werden Live-Produkt-IDs
+und Live-Webhooks konfiguriert. Test- und Live-Ereignisse bleiben in der
+Datenbank getrennt.

@@ -6,6 +6,17 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert. Das F
 
 ### Added
 
+- Tarifkatalog Free, Creator, Studio und Ultimate mit echtem Jahresvorteil;
+  alle bestehenden Grundfunktionen bleiben im kostenlosen Tarif
+- vorbereitete, versionierte Backoffice-/Billing-/Moderationsmigration 007 mit
+  HMAC-gehashten Providerreferenzen, verschlüsseltem Audit und ohne
+  Speicherung von Zahlungsinstrumenten oder Rechnungsdaten
+- capability-geschütztes Backoffice für Admin und Moderation; kritische
+  Kontostatus-, Rollen- und Tarifänderungen verlangen zusätzlich das aktuelle
+  Admin-Kennwort und einen protokollierten Grund
+- klickbare Desktop-Navigation sowie ein serverseitig freigeschalteter
+  Backoffice-Einstieg für berechtigte Konten
+
 - externe HTTPS-Bildreferenzen als verschlüsselte, speichersparende Alternative
   zum privaten Markenmaterial-Upload; ohne serverseitigen Abruf oder Proxy
 - Kontoübersicht mit serverseitig berechneten Projektslots und Mediennutzung

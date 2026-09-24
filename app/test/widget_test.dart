@@ -6,8 +6,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mgd_ci_builder/main.dart';
 import 'package:mgd_ci_builder/features/legal/legal_document.dart';
 import 'package:mgd_ci_builder/features/onboarding/brand_asset_picker.dart';
+import 'package:mgd_ci_builder/features/billing/plan_catalog.dart';
 
 void main() {
+  test('Tarifkatalog zeigt alle Tarife und einen echten Jahresvorteil', () {
+    expect(PlanCatalog.publicPlans.map((plan) => plan.slug), [
+      'free',
+      'creator',
+      'studio',
+      'ultimate',
+    ]);
+    for (final plan in PlanCatalog.publicPlans.where((plan) => plan.isPaid)) {
+      expect(plan.yearlyPriceCents, lessThan(plan.monthlyPriceCents * 12));
+      expect(plan.annualSavingsPercent, greaterThan(0));
+    }
+    expect(PlanCatalog.publicPlans.first.includesAllCoreFeatures, isTrue);
+  });
+
   test('resolves public legal documents from direct and hash URLs', () {
     expect(
       LegalDocumentContent.fromUri(Uri.parse('https://ci.example/impressum')),
@@ -134,6 +149,25 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('CI BUILDER'), findsOneWidget);
     expect(find.text('Projekt starten'), findsOneWidget);
+  });
+
+  testWidgets('keeps signed-in navigation usable in phone landscape', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(812, 375);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(home: BuilderHome(csrfToken: 'test')),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Konto'));
+    await tester.pumpAndSettle();
+    expect(find.text('Konto & Sicherheit'), findsOneWidget);
   });
 
   testWidgets('opens the public imprint from the landing footer', (

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'features/account/account_page.dart';
+import 'features/account/account_repository.dart';
 import 'features/auth/password_reset_pages.dart';
+import 'features/backoffice/backoffice_page.dart';
 import 'features/billing/upgrade_offer_sheet.dart';
 import 'features/editor/typography/typography_selector.dart';
 import 'features/landing/landing_layout.dart';
@@ -1093,8 +1095,10 @@ class _BuilderHomeState extends State<BuilderHome> {
   int _selectedSection = 0;
   late final BrandAssetPicker _assetPicker;
   late final ProjectRepository _projects;
+  late final AccountRepository _accountRepository;
   List<ProjectSummary> _projectList = const [];
   bool _loadingProjects = true;
+  AccountProfile? _accountProfile;
   BrandAssetSelection? _logo;
   BrandAssetSelection? _referenceImage;
   String _logoExternalUrl = '';
@@ -1105,7 +1109,9 @@ class _BuilderHomeState extends State<BuilderHome> {
     super.initState();
     _assetPicker = widget.assetPicker ?? createBrandAssetPicker();
     _projects = ProjectRepository(widget.csrfToken);
+    _accountRepository = const AccountRepository();
     _loadProjects();
+    _loadAccountProfile();
   }
 
   @override
@@ -1115,7 +1121,12 @@ class _BuilderHomeState extends State<BuilderHome> {
       body: SafeArea(
         child: Row(
           children: [
-            if (wide) const _Sidebar(),
+            if (wide)
+              _Sidebar(
+                selectedSection: _selectedSection,
+                showBackoffice: _accountProfile?.canOpenBackoffice ?? false,
+                onSelected: (value) => setState(() => _selectedSection = value),
+              ),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.all(wide ? 32 : 20),
@@ -1150,7 +1161,8 @@ class _BuilderHomeState extends State<BuilderHome> {
                                 onAddMaterial: () =>
                                     _openAssistant(initialStep: 1),
                               )
-                            : AccountPage(
+                            : _selectedSection == 2
+                            ? AccountPage(
                                 csrfToken: widget.csrfToken,
                                 onChangePassword: () =>
                                     Navigator.of(context).push(
@@ -1163,6 +1175,12 @@ class _BuilderHomeState extends State<BuilderHome> {
                                         ),
                                       ),
                                     ),
+                              )
+                            : _accountProfile == null
+                            ? const Center(child: CircularProgressIndicator())
+                            : BackofficePage(
+                                csrfToken: widget.csrfToken,
+                                profile: _accountProfile!,
                               ),
                       ),
                     ),
@@ -1179,7 +1197,7 @@ class _BuilderHomeState extends State<BuilderHome> {
               selectedIndex: _selectedSection,
               onDestinationSelected: (value) =>
                   setState(() => _selectedSection = value),
-              destinations: const [
+              destinations: [
                 NavigationDestination(
                   icon: Icon(Icons.grid_view_rounded),
                   label: 'Übersicht',
@@ -1192,6 +1210,11 @@ class _BuilderHomeState extends State<BuilderHome> {
                   icon: Icon(Icons.person_outline_rounded),
                   label: 'Konto',
                 ),
+                if (_accountProfile?.canOpenBackoffice ?? false)
+                  const NavigationDestination(
+                    icon: Icon(Icons.admin_panel_settings_outlined),
+                    label: 'Backoffice',
+                  ),
               ],
             ),
     );
@@ -1245,6 +1268,15 @@ class _BuilderHomeState extends State<BuilderHome> {
       // Die leere Ansicht bleibt nutzbar; Details werden nicht an den Client geleakt.
     } finally {
       if (mounted) setState(() => _loadingProjects = false);
+    }
+  }
+
+  Future<void> _loadAccountProfile() async {
+    try {
+      final profile = await _accountRepository.loadProfile();
+      if (mounted) setState(() => _accountProfile = profile);
+    } on AccountApiException {
+      // Das reguläre Produkt bleibt bei einem temporären Profilfehler nutzbar.
     }
   }
 
@@ -1316,7 +1348,15 @@ class _BuilderHomeState extends State<BuilderHome> {
 }
 
 class _Sidebar extends StatelessWidget {
-  const _Sidebar();
+  const _Sidebar({
+    required this.selectedSection,
+    required this.showBackoffice,
+    required this.onSelected,
+  });
+
+  final int selectedSection;
+  final bool showBackoffice;
+  final ValueChanged<int> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -1332,18 +1372,31 @@ class _Sidebar extends StatelessWidget {
         children: [
           const _BrandMark(),
           const SizedBox(height: 52),
-          const _NavItem(
+          _NavItem(
             icon: Icons.grid_view_rounded,
             label: 'Übersicht',
-            active: true,
+            active: selectedSection == 0,
+            onPressed: () => onSelected(0),
           ),
-          const _NavItem(icon: Icons.folder_open_outlined, label: 'Projekte'),
-          const _NavItem(icon: Icons.auto_awesome_outlined, label: 'Assistent'),
-          const _NavItem(icon: Icons.layers_outlined, label: 'Vorlagen'),
-          const _NavItem(
-            icon: Icons.shopping_bag_outlined,
-            label: 'Erweiterungen',
+          _NavItem(
+            icon: Icons.auto_awesome_outlined,
+            label: 'Assistent',
+            active: selectedSection == 1,
+            onPressed: () => onSelected(1),
           ),
+          _NavItem(
+            icon: Icons.person_outline_rounded,
+            label: 'Konto',
+            active: selectedSection == 2,
+            onPressed: () => onSelected(2),
+          ),
+          if (showBackoffice)
+            _NavItem(
+              icon: Icons.admin_panel_settings_outlined,
+              label: 'Backoffice',
+              active: selectedSection == 3,
+              onPressed: () => onSelected(3),
+            ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.all(14),
@@ -1382,9 +1435,14 @@ class _Sidebar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          const _NavItem(
+          _NavItem(
             icon: Icons.help_outline_rounded,
             label: 'Hilfe & Feedback',
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Hilfe & Feedback wird vorbereitet.'),
+              ),
+            ),
           ),
         ],
       ),
@@ -1449,36 +1507,49 @@ class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
     required this.label,
+    required this.onPressed,
     this.active = false,
   });
   final IconData icon;
   final String label;
+  final VoidCallback onPressed;
   final bool active;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 6),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-    decoration: BoxDecoration(
-      color: active ? const Color(0xFF2D2C33) : Colors.transparent,
-      borderRadius: BorderRadius.circular(11),
-    ),
-    child: Row(
-      children: [
-        Icon(
-          icon,
-          color: active ? Colors.white : const Color(0xFFB5B3BE),
-          size: 20,
-        ),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            color: active ? Colors.white : const Color(0xFFCBC9D2),
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Semantics(
+      selected: active,
+      button: true,
+      label: label,
+      child: Material(
+        color: active ? const Color(0xFF2D2C33) : Colors.transparent,
+        borderRadius: BorderRadius.circular(11),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(11),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color: active ? Colors.white : const Color(0xFFB5B3BE),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: active ? Colors.white : const Color(0xFFCBC9D2),
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ],
+      ),
     ),
   );
 }

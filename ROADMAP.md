@@ -28,11 +28,19 @@ Die Roadmap beschreibt die Produktreihenfolge, keine festen Liefertermine.
 - teilbare Vorlagenbibliothek
 - optionale Team- und Kundenrollen
 
-## 0.5 — Store ohne Abo
+## 0.5 — optionale Tarife und Store
 
-- Stripe Checkout für Einmalkäufe
-- serverseitige Webhook-Validierung
-- dauerhafte Entitlements für Projektslots und Erweiterungen
+- Free: alle aktuellen Grundfunktionen, 1 Projekt, 100 MB Speicher und eine
+  Standardvorlage
+- Creator: 9 € monatlich oder 90 € jährlich, 4 Projekte und 500 MB
+- Studio: 19 € monatlich oder 190 € jährlich, 12 Projekte und 1,5 GB
+- Ultimate: 49 € monatlich oder 490 € jährlich, 25 Projekte und bis zu 3 GB;
+  erst nach EU-Speicher- und Kostenfreigabe buchbar
+- Stripe Checkout ausschließlich nach getrenntem Testkatalog, serverseitiger
+  Webhook-Validierung, idempotenten Entitlements und dokumentiertem
+  Erstattungs-/Dispute-Prozess
+- Backoffice für Admins und Moderation nach Least Privilege; Moderation hat
+  keinen Zugriff auf Zahlungs- oder Kontodaten
 
 ## Nicht Teil des ersten Releases
 
