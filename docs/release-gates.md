@@ -9,6 +9,10 @@ safe, deployed or compliant.
 1. Review the change and keep its scope small.
 2. Run formatter, static analysis and automated tests.
 3. Build the Flutter web bundle from a clean dependency install.
+   When the build is copied from a NAS or other mounted volume, normalise the
+   published file modes after transfer: directories need `755`, static files
+   need `644`. Never preserve private `700` modes into the web root; Apache
+   denies such files and may return a blanket `403` for the whole app.
 4. Verify that no `.env`, credentials, private endpoints, manual files or
    customer media are in the staged Git diff or web bundle.
 5. Update affected data-model, security and user-facing documentation.
