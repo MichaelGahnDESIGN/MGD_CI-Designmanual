@@ -1,9 +1,9 @@
 {
   "0": "main.dart",
-  "1": "legal_page.dart",
+  "1": "typography_selector.dart",
   "2": "password_reset_pages.dart",
   "3": "project_repository.dart",
-  "4": "account_page.dart",
+  "4": "account_repository.dart",
   "5": "index.php",
   "6": "StatelessWidget",
   "7": "legal_document.dart",
@@ -53,5 +53,9 @@
   "51": "backoffice_repository.dart",
   "52": "backoffice_page.dart",
   "53": "007_backoffice_billing_moderation.sql",
-  "54": "backoffice_policy_test.php"
+  "54": "backoffice_policy_test.php",
+  "55": "legal_page.dart",
+  "56": "landing_footer.dart",
+  "57": "font_catalog.dart",
+  "58": "package:flutter/material.dart"
 }

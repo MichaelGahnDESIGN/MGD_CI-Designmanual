@@ -12,15 +12,15 @@
     "semantic_hash": "8f21575b1327284ef2f424b0f9fad049"
   },
   "app/lib/main.dart": {
-    "mtime": 1790263819.8814857,
-    "seen": 1790263942.594569,
-    "ast_hash": "c2a0fb195838d87174a4f28699fc367c",
+    "mtime": 1790284369.4422548,
+    "seen": 1790284559.334479,
+    "ast_hash": "b3d3f9a0e26360ec66535cf20350983b",
     "semantic_hash": ""
   },
   "app/test/widget_test.dart": {
-    "mtime": 1790263236.9377184,
-    "seen": 1790263942.594572,
-    "ast_hash": "c1ce1723ed74c780bc5c2e0be291669a",
+    "mtime": 1790284347.5503824,
+    "seen": 1790284559.3344798,
+    "ast_hash": "2e03ef61a02a47f289a9ca7165d52d96",
     "semantic_hash": ""
   },
   "app/web/manifest.json": {
@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1790263898.1215892,
-    "seen": 1790263942.594595,
-    "ast_hash": "8707fdf3500a41ac01506d2211f5ded5",
+    "mtime": 1790284482.6083326,
+    "seen": 1790284559.334495,
+    "ast_hash": "9fcdb8e0fe2c43ad10241e620086b311",
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
@@ -78,9 +78,9 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1790263898.1880145,
-    "seen": 1790263942.5945978,
-    "ast_hash": "12593cbceefcba87b79157222435b112",
+    "mtime": 1790265894.327298,
+    "seen": 1790284559.334497,
+    "ast_hash": "a739c1b9c32335b0e93d43b9e3e17566",
     "semantic_hash": ""
   },
   "ROADMAP.md": {
@@ -216,9 +216,9 @@
     "semantic_hash": ""
   },
   "docs/release-gates.md": {
-    "mtime": 1790064749.2712493,
-    "seen": 1790090457.001027,
-    "ast_hash": "eb2d3ace7464fec4549f5d5855060a67",
+    "mtime": 1790266035.7401674,
+    "seen": 1790284559.334521,
+    "ast_hash": "d9897e8c51b4a032265a448bee9a5409",
     "semantic_hash": ""
   },
   "docs/research-sources.md": {
@@ -366,9 +366,9 @@
     "semantic_hash": ""
   },
   "app/lib/features/account/account_repository.dart": {
-    "mtime": 1790263698.219428,
-    "seen": 1790263942.594532,
-    "ast_hash": "e1cce7db99c0d13009712b1fa1e97f07",
+    "mtime": 1790266838.6183927,
+    "seen": 1790284559.334456,
+    "ast_hash": "d0aa33e7c36f63f681f6d11f81d1c8fc",
     "semantic_hash": ""
   },
   "app/lib/features/auth/password_reset_pages.dart": {
@@ -444,9 +444,9 @@
     "semantic_hash": ""
   },
   "WIKI/00-OVERVIEW/Current-Status.md": {
-    "mtime": 1790263898.3788445,
-    "seen": 1790263942.594604,
-    "ast_hash": "a44522abf93532526a03f80c9d8f8396",
+    "mtime": 1790265894.3216386,
+    "seen": 1790284559.3345,
+    "ast_hash": "64134dba6f98ad3d9eb82b4826a174cd",
     "semantic_hash": ""
   },
   "app/lib/features/backoffice/backoffice_page.dart": {

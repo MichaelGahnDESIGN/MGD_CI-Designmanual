@@ -18,7 +18,7 @@
   "16": "002_projects_manuals_entitlements.sql",
   "17": "browser_storage_web.dart",
   "18": "001_identity_security_foundation.sql",
-  "19": "upgrade_offer_sheet.dart",
+  "19": "plan_catalog.dart",
   "20": "brand_asset_picker_stub.dart",
   "21": "Roadmap",
   "22": "AGENTS.md",
@@ -49,5 +49,9 @@
   "47": "research-sources.md",
   "48": "config.example.php",
   "49": "003_login_identity_and_password_change.sql",
-  "50": "006_external_image_references.sql"
+  "50": "006_external_image_references.sql",
+  "51": "backoffice_repository.dart",
+  "52": "backoffice_page.dart",
+  "53": "007_backoffice_billing_moderation.sql",
+  "54": "backoffice_policy_test.php"
 }

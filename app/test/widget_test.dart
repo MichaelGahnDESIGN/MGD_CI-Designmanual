@@ -102,6 +102,15 @@ void main() {
     expect(find.byIcon(Icons.light_mode_outlined), findsOneWidget);
   });
 
+  testWidgets('uses a shader-independent press response for the web app', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const CiBuilderApp());
+
+    final theme = Theme.of(tester.element(find.byType(LandingPage)));
+    expect(theme.splashFactory, InkRipple.splashFactory);
+  });
+
   testWidgets('shows a dedicated theme control in the signed-in header', (
     tester,
   ) async {

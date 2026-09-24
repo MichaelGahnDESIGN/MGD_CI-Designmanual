@@ -1,17 +1,17 @@
-# Graph Report - Design-Manual-Editor  (2026-09-22)
+# Graph Report - Design-Manual-Editor  (2026-09-24)
 
 ## Corpus Check
-- 56 files · ~33,966 words
+- 62 files · ~39,614 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 16 file(s) not represented in the graph (top: (none) 13, .css 2, .lock 1)
 
 ## Summary
-- 594 nodes · 684 edges · 51 communities (36 shown, 15 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.85)
+- 703 nodes · 831 edges · 55 communities (39 shown, 16 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `aab85563`
+- Built from commit: `2bf54246`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -35,7 +35,7 @@
 - 002_projects_manuals_entitlements.sql
 - browser_storage_web.dart
 - 001_identity_security_foundation.sql
-- upgrade_offer_sheet.dart
+- plan_catalog.dart
 - brand_asset_picker_stub.dart
 - Roadmap
 - AGENTS.md
@@ -64,18 +64,21 @@
 - 005_projects_registration_hardening.sql
 - manual-schema.md
 - research-sources.md
+- backoffice_repository.dart
+- backoffice_page.dart
+- 007_backoffice_billing_moderation.sql
 
 ## God Nodes (most connected - your core abstractions)
-1. `respond()` - 12 edges
-2. `Daten, Sicherheit und Datenschutz` - 10 edges
-3. `Roadmap` - 7 edges
-4. `Landing-CMS und lokales Designsystem` - 6 edges
-5. `Produktanforderungen — Michael Gahn DESIGN CI BUILDER` - 6 edges
-6. `BrandAssetPicker` - 5 edges
-7. `enforceRateLimit()` - 5 edges
-8. `pdo()` - 5 edges
-9. `Architektur` - 5 edges
-10. `Lokale Schriftbibliothek und Font-Upload` - 5 edges
+1. `respond()` - 14 edges
+2. `pdo()` - 13 edges
+3. `Daten, Sicherheit und Datenschutz` - 10 edges
+4. `Roadmap` - 7 edges
+5. `enforceRateLimit()` - 6 edges
+6. `auditEvent()` - 6 edges
+7. `requireFreshAdminPassword()` - 6 edges
+8. `Landing-CMS und lokales Designsystem` - 6 edges
+9. `Produktanforderungen — Michael Gahn DESIGN CI BUILDER` - 6 edges
+10. `BrandAssetPicker` - 5 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `_UnsupportedAssetPicker` --implements--> `BrandAssetPicker`  [EXTRACTED]
@@ -84,47 +87,51 @@
   app/lib/features/onboarding/brand_asset_picker_web.dart → app/lib/features/onboarding/brand_asset_picker_types.dart
 - `_FakeBrandAssetPicker` --implements--> `BrandAssetPicker`  [EXTRACTED]
   app/test/widget_test.dart → app/lib/features/onboarding/brand_asset_picker_types.dart
+- `effectivePlanForUser()` --calls--> `ciDefaultPlanCatalog()`  [INFERRED]
+  backend/public/index.php → backend/lib/BackofficePolicy.php
+- `publicPlanCatalog()` --calls--> `ciDefaultPlanCatalog()`  [INFERRED]
+  backend/public/index.php → backend/lib/BackofficePolicy.php
 
 ## Import Cycles
 - None detected.
 
-## Communities (51 total, 15 thin omitted)
+## Communities (55 total, 16 thin omitted)
 
 ### Community 0 - "main.dart"
 Cohesion: 0.02
-Nodes (117): active, _add, AppLanguage, assetPicker, _assets, _authCardDecoration, _authInputDecoration, _buildStep (+109 more)
+Nodes (124): _accountProfile, _accountRepository, active, _add, AppLanguage, assetPicker, _assets, _authCardDecoration (+116 more)
 
 ### Community 1 - "legal_page.dart"
 Cohesion: 0.05
 Nodes (40): BrandFontOption, description, family, sample, standardBrandFonts, BrandTypographySelector, build, font (+32 more)
 
 ### Community 2 - "password_reset_pages.dart"
-Cohesion: 0.08
-Nodes (34): AccountPage, _AccountPageState, build, createState, dispose, _email, _error, _password (+26 more)
+Cohesion: 0.07
+Nodes (35): AccountPage, _AccountPageState, build, createState, dispose, _email, _error, _password (+27 more)
 
 ### Community 3 - "project_repository.dart"
-Cohesion: 0.07
-Nodes (29): AccountApiException, BrandAssetPickerException, byteSize, code, company, contentUrl, create, createdAt (+21 more)
+Cohesion: 0.06
+Nodes (30): AccountApiException, BackofficeApiException, BrandAssetPickerException, byteSize, code, company, contentUrl, create (+22 more)
 
 ### Community 4 - "account_page.dart"
-Cohesion: 0.08
-Nodes (27): account_repository.dart, build, _confirmDeletion, createState, csrfToken, _deleting, _formatMegabytes, initState (+19 more)
+Cohesion: 0.06
+Nodes (31): account_repository.dart, build, _confirmDeletion, createState, csrfToken, _deleting, _formatMegabytes, initState (+23 more)
 
 ### Community 5 - "index.php"
-Cohesion: 0.13
-Nodes (23): authenticated(), createSession(), decryptValue(), encryptValue(), enforceRateLimit(), externalImageUrl(), hasCapability(), keyBytes() (+15 more)
+Cohesion: 0.10
+Nodes (34): ciDefaultPlanCatalog(), auditEvent(), authenticated(), capabilitiesForUser(), createSession(), decryptValue(), effectivePlanForUser(), encryptValue() (+26 more)
 
 ### Community 6 - "StatelessWidget"
 Cohesion: 0.10
 Nodes (20): _AssistantProgress, _AssistantWorkspace, _BrandMark, _ColorSwatch, _Dashboard, _ExplainerCard, _ExternalImageUrlField, _FormLabel (+12 more)
 
 ### Community 7 - "legal_document.dart"
-Cohesion: 0.11
-Nodes (18): body, footerLabel, fromRoute, fromUri, intro, isDraft, label, LegalDocument (+10 more)
+Cohesion: 0.12
+Nodes (17): body, footerLabel, fromRoute, fromUri, intro, isDraft, label, LegalDocument (+9 more)
 
 ### Community 8 - "widget_test.dart"
-Cohesion: 0.12
-Nodes (16): ensureVisible, enterText, main, _openMaterialStep, pick, pumpAndSettle, requestedKinds, result (+8 more)
+Cohesion: 0.11
+Nodes (17): ensureVisible, enterText, main, _openMaterialStep, pick, pumpAndSettle, requestedKinds, result (+9 more)
 
 ### Community 9 - "landing_layout.dart"
 Cohesion: 0.12
@@ -135,8 +142,8 @@ Cohesion: 0.14
 Nodes (14): _acceptNecessary, build, _CookieCategory, CookieConsentBanner, _CookieConsentBannerState, _CookieSettingsSheet, createState, description (+6 more)
 
 ### Community 11 - "Daten, Sicherheit und Datenschutz"
-Cohesion: 0.17
-Nodes (11): Authentifizierung und Rechte, Betriebsschutz, Daten, Sicherheit und Datenschutz, Datenbankentscheidung, Datenschutz by design, Kennwort-Reset, Material: privater Upload oder externe Referenz, Minimales Datenmodell (+3 more)
+Cohesion: 0.15
+Nodes (12): Authentifizierung und Rechte, Backoffice, Tarife und Zahlungsdaten, Betriebsschutz, Daten, Sicherheit und Datenschutz, Datenbankentscheidung, Datenschutz by design, Kennwort-Reset, Material: privater Upload oder externe Referenz (+4 more)
 
 ### Community 12 - "Michael Gahn DESIGN – CI BUILDER"
 Cohesion: 0.17
@@ -166,9 +173,9 @@ Nodes (8): _cookieChoiceKey, hasSavedCookieChoice, openExternalUrl, saveNecessar
 Cohesion: 0.20
 Nodes (9): audit_events, auth_one_time_tokens, auth_sessions, roles, schema_migrations, two_factor_methods, two_factor_recovery_codes, user_roles (+1 more)
 
-### Community 19 - "upgrade_offer_sheet.dart"
-Cohesion: 0.22
-Nodes (8): accent, build, detail, _PlanTile, price, show, title, UpgradeOfferSheet
+### Community 19 - "plan_catalog.dart"
+Cohesion: 0.06
+Nodes (31): fontFamilies, includesAllCoreFeatures, isAvailable, isPaid, logoVariants, megabyte, monthlyPriceCents, name (+23 more)
 
 ### Community 20 - "brand_asset_picker_stub.dart"
 Cohesion: 0.25
@@ -176,7 +183,7 @@ Nodes (6): createBrandAssetPicker, createBrandAssetPicker, pick, _UnsupportedAss
 
 ### Community 21 - "Roadmap"
 Cohesion: 0.25
-Nodes (7): 0.1 — Flutter- und Sicherheitsfundament, 0.2 — Manual-Bibliothek, 0.3 — Veröffentlichung, 0.4 — Agentur-Workflow, 0.5 — Store ohne Abo, Nicht Teil des ersten Releases, Roadmap
+Nodes (7): 0.1 — Flutter- und Sicherheitsfundament, 0.2 — Manual-Bibliothek, 0.3 — Veröffentlichung, 0.4 — Agentur-Workflow, 0.5 — optionale Tarife und Store, Nicht Teil des ersten Releases, Roadmap
 
 ### Community 22 - "AGENTS.md"
 Cohesion: 0.29
@@ -234,25 +241,37 @@ Nodes (3): Branches, Grundsätze, Mitwirken
 Cohesion: 0.67
 Nodes (3): BrandAssetPicker, _WebBrandAssetPicker, _FakeBrandAssetPicker
 
+### Community 51 - "backoffice_repository.dart"
+Cohesion: 0.07
+Nodes (26): amountCents, BackofficeTransaction, category, createCase, csrfToken, currency, description, fromJson (+18 more)
+
+### Community 52 - "backoffice_page.dart"
+Cohesion: 0.09
+Nodes (23): ../account/account_repository.dart, BackofficePage, _BackofficePageState, build, _cases, _changeCaseStatus, _createCase, createState (+15 more)
+
+### Community 53 - "007_backoffice_billing_moderation.sql"
+Cohesion: 0.33
+Nodes (5): account_entitlements, billing_plans, billing_subscriptions, billing_transactions, moderation_cases
+
 ## Knowledge Gaps
-- **354 isolated node(s):** `csrfToken`, `onChangePassword`, `_deleting`, `_repository`, `_profile` (+349 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 424 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **427 isolated node(s):** `csrfToken`, `onChangePassword`, `_deleting`, `_repository`, `_profile` (+422 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 507 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `BrandAssetPicker` connect `BrandAssetPicker` to `main.dart`, `brand_asset_picker_stub.dart`, `brand_asset_picker_types.dart`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `AccountProfile` connect `account_page.dart` to `main.dart`, `backoffice_page.dart`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Why does `BrandAssetSelection` connect `brand_asset_picker_types.dart` to `main.dart`, `widget_test.dart`?**
-  _High betweenness centrality (0.013) - this node is a cross-community bridge._
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **What connects `csrfToken`, `onChangePassword`, `_deleting` to the rest of the system?**
-  _354 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _427 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `main.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.01694915254237288 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.016 - nodes in this community are weakly interconnected._
 - **Should `legal_page.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.049494949494949494 - nodes in this community are weakly interconnected._
 - **Should `password_reset_pages.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.0773109243697479 - nodes in this community are weakly interconnected._
-- **Should `project_repository.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.06666666666666667 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0746031746031746 - nodes in this community are weakly interconnected._

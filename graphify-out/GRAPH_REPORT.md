@@ -1,26 +1,26 @@
 # Graph Report - Design-Manual-Editor  (2026-09-24)
 
 ## Corpus Check
-- 62 files · ~39,614 words
+- 62 files · ~40,057 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 16 file(s) not represented in the graph (top: (none) 13, .css 2, .lock 1)
 
 ## Summary
-- 703 nodes · 831 edges · 55 communities (39 shown, 16 thin omitted)
+- 706 nodes · 835 edges · 59 communities (43 shown, 16 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2bf54246`
+- Built from commit: `d6c7f742`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - main.dart
-- legal_page.dart
+- typography_selector.dart
 - password_reset_pages.dart
 - project_repository.dart
-- account_page.dart
+- account_repository.dart
 - index.php
 - StatelessWidget
 - legal_document.dart
@@ -67,6 +67,10 @@
 - backoffice_repository.dart
 - backoffice_page.dart
 - 007_backoffice_billing_moderation.sql
+- legal_page.dart
+- landing_footer.dart
+- font_catalog.dart
+- package:flutter/material.dart
 
 ## God Nodes (most connected - your core abstractions)
 1. `respond()` - 14 edges
@@ -95,15 +99,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (55 total, 16 thin omitted)
+## Communities (59 total, 16 thin omitted)
 
 ### Community 0 - "main.dart"
 Cohesion: 0.02
 Nodes (124): _accountProfile, _accountRepository, active, _add, AppLanguage, assetPicker, _assets, _authCardDecoration (+116 more)
 
-### Community 1 - "legal_page.dart"
-Cohesion: 0.05
-Nodes (40): BrandFontOption, description, family, sample, standardBrandFonts, BrandTypographySelector, build, font (+32 more)
+### Community 1 - "typography_selector.dart"
+Cohesion: 0.17
+Nodes (11): BrandTypographySelector, build, font, _FontCard, onChanged, onTap, onUploadInfo, _ProBadge (+3 more)
 
 ### Community 2 - "password_reset_pages.dart"
 Cohesion: 0.07
@@ -113,9 +117,9 @@ Nodes (35): AccountPage, _AccountPageState, build, createState, dispose, _email,
 Cohesion: 0.06
 Nodes (30): AccountApiException, BackofficeApiException, BrandAssetPickerException, byteSize, code, company, contentUrl, create (+22 more)
 
-### Community 4 - "account_page.dart"
+### Community 4 - "account_repository.dart"
 Cohesion: 0.06
-Nodes (31): account_repository.dart, build, _confirmDeletion, createState, csrfToken, _deleting, _formatMegabytes, initState (+23 more)
+Nodes (32): account_repository.dart, build, _confirmDeletion, createState, csrfToken, _deleting, _formatMegabytes, initState (+24 more)
 
 ### Community 5 - "index.php"
 Cohesion: 0.10
@@ -130,8 +134,8 @@ Cohesion: 0.12
 Nodes (17): body, footerLabel, fromRoute, fromUri, intro, isDraft, label, LegalDocument (+9 more)
 
 ### Community 8 - "widget_test.dart"
-Cohesion: 0.11
-Nodes (17): ensureVisible, enterText, main, _openMaterialStep, pick, pumpAndSettle, requestedKinds, result (+9 more)
+Cohesion: 0.10
+Nodes (19): ensureVisible, enterText, main, _openMaterialStep, pick, _profile, pumpAndSettle, requestedKinds (+11 more)
 
 ### Community 9 - "landing_layout.dart"
 Cohesion: 0.12
@@ -253,25 +257,41 @@ Nodes (23): ../account/account_repository.dart, BackofficePage, _BackofficePageS
 Cohesion: 0.33
 Nodes (5): account_entitlements, billing_plans, billing_subscriptions, billing_transactions, moderation_cases
 
+### Community 55 - "legal_page.dart"
+Cohesion: 0.17
+Nodes (11): LegalSection, build, darkMode, document, _DraftBanner, LegalPage, _LegalSectionView, onThemeToggle (+3 more)
+
+### Community 56 - "landing_footer.dart"
+Cohesion: 0.18
+Nodes (10): build, document, _FooterLink, LandingFooter, onOpenDocument, onPressed, browser_storage.dart, legal_document.dart (+2 more)
+
+### Community 57 - "font_catalog.dart"
+Cohesion: 0.33
+Nodes (5): BrandFontOption, description, family, sample, standardBrandFonts
+
+### Community 58 - "package:flutter/material.dart"
+Cohesion: 0.50
+Nodes (3): build, CiBrandMark, package:flutter/material.dart
+
 ## Knowledge Gaps
-- **427 isolated node(s):** `csrfToken`, `onChangePassword`, `_deleting`, `_repository`, `_profile` (+422 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 507 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **429 isolated node(s):** `csrfToken`, `onChangePassword`, `_deleting`, `_repository`, `_profile` (+424 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 509 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
+- **Why does `AccountProfile` connect `account_repository.dart` to `main.dart`, `backoffice_page.dart`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Why does `BrandAssetPicker` connect `BrandAssetPicker` to `main.dart`, `brand_asset_picker_stub.dart`, `brand_asset_picker_types.dart`?**
   _High betweenness centrality (0.015) - this node is a cross-community bridge._
-- **Why does `AccountProfile` connect `account_page.dart` to `main.dart`, `backoffice_page.dart`?**
-  _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Why does `BrandAssetSelection` connect `brand_asset_picker_types.dart` to `main.dart`, `widget_test.dart`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **What connects `csrfToken`, `onChangePassword`, `_deleting` to the rest of the system?**
-  _427 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _429 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `main.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.016 - nodes in this community are weakly interconnected._
-- **Should `legal_page.dart` be split into smaller, more focused modules?**
-  _Cohesion score 0.049494949494949494 - nodes in this community are weakly interconnected._
 - **Should `password_reset_pages.dart` be split into smaller, more focused modules?**
   _Cohesion score 0.0746031746031746 - nodes in this community are weakly interconnected._
+- **Should `project_repository.dart` be split into smaller, more focused modules?**
+  _Cohesion score 0.06451612903225806 - nodes in this community are weakly interconnected._

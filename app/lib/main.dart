@@ -149,6 +149,10 @@ class _CiBuilderAppState extends State<CiBuilderApp> {
         onSurface: ink,
       ),
       useMaterial3: true,
+      // InkSparkle benötigt einen GPU-Shader, der im Flutter-Test-Renderer
+      // nicht verfügbar ist. Der klassische Material-Ripple bleibt in Web,
+      // Light-/Darkmode und automatisierten Tests sichtbar und bedienbar.
+      splashFactory: InkRipple.splashFactory,
       fontFamily: 'Open Sans',
       textTheme: TextTheme(
         headlineLarge: TextStyle(

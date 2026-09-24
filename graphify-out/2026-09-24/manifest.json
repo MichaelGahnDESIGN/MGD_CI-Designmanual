@@ -12,15 +12,15 @@
     "semantic_hash": "8f21575b1327284ef2f424b0f9fad049"
   },
   "app/lib/main.dart": {
-    "mtime": 1790089809.8848293,
-    "seen": 1790090457.0009851,
-    "ast_hash": "7a4ff0eda4c5237ec724609199848e83",
+    "mtime": 1790263819.8814857,
+    "seen": 1790263942.594569,
+    "ast_hash": "c2a0fb195838d87174a4f28699fc367c",
     "semantic_hash": ""
   },
   "app/test/widget_test.dart": {
-    "mtime": 1790087105.1562278,
-    "seen": 1790090457.000986,
-    "ast_hash": "bb955fcf9976bc94d4b323d3e4ad6f1f",
+    "mtime": 1790263236.9377184,
+    "seen": 1790263942.594572,
+    "ast_hash": "c1ce1723ed74c780bc5c2e0be291669a",
     "semantic_hash": ""
   },
   "app/web/manifest.json": {
@@ -42,9 +42,9 @@
     "semantic_hash": "49288e0fd1a3e012db1eb4c7000c5d54"
   },
   "backend/public/index.php": {
-    "mtime": 1790087353.7468152,
-    "seen": 1790090457.0009952,
-    "ast_hash": "e75b20d627b1f7a1997b9a2860b23835",
+    "mtime": 1790263639.4702165,
+    "seen": 1790263942.594589,
+    "ast_hash": "62edecb329506350e14c76f8951765d3",
     "semantic_hash": ""
   },
   ".github/ISSUE_TEMPLATE/feature_request.yml": {
@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "CHANGELOG.md": {
-    "mtime": 1790089948.7968347,
-    "seen": 1790090457.000999,
-    "ast_hash": "8744bd7e6dfe617d10cbb125ff13fc40",
+    "mtime": 1790263898.1215892,
+    "seen": 1790263942.594595,
+    "ast_hash": "8707fdf3500a41ac01506d2211f5ded5",
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
@@ -78,15 +78,15 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1790089940.6174445,
-    "seen": 1790090457.001002,
-    "ast_hash": "33fb7d4153e787600387283c0defa19b",
+    "mtime": 1790263898.1880145,
+    "seen": 1790263942.5945978,
+    "ast_hash": "12593cbceefcba87b79157222435b112",
     "semantic_hash": ""
   },
   "ROADMAP.md": {
-    "mtime": 1790064728.7038379,
-    "seen": 1790090457.001003,
-    "ast_hash": "c0e8c83f00dedde16b8d03837616ecac",
+    "mtime": 1790263898.3405764,
+    "seen": 1790263942.594599,
+    "ast_hash": "e470cdb0c2a058d551100f9015ee66df",
     "semantic_hash": ""
   },
   "SECURITY.md": {
@@ -168,15 +168,15 @@
     "semantic_hash": ""
   },
   "docs/architecture.md": {
-    "mtime": 1790064747.7043998,
-    "seen": 1790090457.0010188,
-    "ast_hash": "717182413d2f0466cbfc4bd3d033f176",
+    "mtime": 1790263899.018211,
+    "seen": 1790263942.594626,
+    "ast_hash": "c2cb80079efaab44ef472eb83660ee1f",
     "semantic_hash": ""
   },
   "docs/data-and-security.md": {
-    "mtime": 1790089787.8721375,
-    "seen": 1790090457.00102,
-    "ast_hash": "2fd9a06d58e06e52922fa09186ee90d2",
+    "mtime": 1790263899.0660725,
+    "seen": 1790263942.5946271,
+    "ast_hash": "6b9d862bc8a8e32c87a42c622d4f0111",
     "semantic_hash": ""
   },
   "docs/designmanual-content-model.md": {
@@ -366,9 +366,9 @@
     "semantic_hash": ""
   },
   "app/lib/features/account/account_repository.dart": {
-    "mtime": 1790087311.427967,
-    "seen": 1790090457.0009642,
-    "ast_hash": "641fa3e2f0675b8b9c2890c5c6dae7f9",
+    "mtime": 1790263698.219428,
+    "seen": 1790263942.594532,
+    "ast_hash": "e1cce7db99c0d13009712b1fa1e97f07",
     "semantic_hash": ""
   },
   "app/lib/features/auth/password_reset_pages.dart": {
@@ -378,9 +378,9 @@
     "semantic_hash": ""
   },
   "app/lib/features/billing/upgrade_offer_sheet.dart": {
-    "mtime": 1790089777.9245167,
-    "seen": 1790090457.0009658,
-    "ast_hash": "ec92f5a77dd1e98d9feb93030b17957d",
+    "mtime": 1790263295.2226214,
+    "seen": 1790263942.59454,
+    "ast_hash": "94456bc0dd5e6675a56b50bb4cd0a13d",
     "semantic_hash": ""
   },
   "app/lib/features/onboarding/brand_asset_picker.dart": {
@@ -444,9 +444,45 @@
     "semantic_hash": ""
   },
   "WIKI/00-OVERVIEW/Current-Status.md": {
-    "mtime": 1790077918.9272075,
-    "seen": 1790090457.0010061,
-    "ast_hash": "a0b3acd846dc7313a3ee48d1dfccee2c",
+    "mtime": 1790263898.3788445,
+    "seen": 1790263942.594604,
+    "ast_hash": "a44522abf93532526a03f80c9d8f8396",
+    "semantic_hash": ""
+  },
+  "app/lib/features/backoffice/backoffice_page.dart": {
+    "mtime": 1790263820.3380306,
+    "seen": 1790263942.5945358,
+    "ast_hash": "1f02e1983ca9a4ce9bb2f74542ebd004",
+    "semantic_hash": ""
+  },
+  "app/lib/features/backoffice/backoffice_repository.dart": {
+    "mtime": 1790263698.3951938,
+    "seen": 1790263942.594537,
+    "ast_hash": "526593d6b55c21e530b2f899f787ede3",
+    "semantic_hash": ""
+  },
+  "app/lib/features/billing/plan_catalog.dart": {
+    "mtime": 1790263292.0505853,
+    "seen": 1790263942.594538,
+    "ast_hash": "afbec29dcf3bb9052e48a557c36e90d1",
+    "semantic_hash": ""
+  },
+  "backend/lib/BackofficePolicy.php": {
+    "mtime": 1790263345.6099827,
+    "seen": 1790263942.594576,
+    "ast_hash": "3a82c2ecceda6d12c1e9367aec6e8e03",
+    "semantic_hash": ""
+  },
+  "backend/migrations/007_backoffice_billing_moderation.sql": {
+    "mtime": 1790263654.1838098,
+    "seen": 1790263942.5945861,
+    "ast_hash": "d2a17b01b684741e44e4e0404b588065",
+    "semantic_hash": ""
+  },
+  "backend/tests/backoffice_policy_test.php": {
+    "mtime": 1790263316.053233,
+    "seen": 1790263942.59459,
+    "ast_hash": "442fa6c2b16f38526455231535a7d621",
     "semantic_hash": ""
   }
 }

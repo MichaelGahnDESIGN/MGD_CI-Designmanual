@@ -62,6 +62,9 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert. Das F
 
 ### Changed
 
+- Interaktionsfeedback verwendet nun den shader-unabhängigen Material-Ripple;
+  dadurch bleiben Klickrückmeldungen in Light- und Darkmode sichtbar und die
+  Flutter-Webtests laufen ohne GPU-Shader-Abhängigkeit zuverlässig durch
 - Assistent, Projekt-Mediathek und Workflow-Karten verwenden für Light- und
   Darkmode ausschließlich semantische Theme-Farben; der eingeloggte Header hat
   einen eigenen Theme-Schalter vor den Benachrichtigungen
