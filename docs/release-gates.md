@@ -8,7 +8,10 @@ safe, deployed or compliant.
 
 1. Review the change and keep its scope small.
 2. Run formatter, static analysis and automated tests.
-3. Build the Flutter web bundle from a clean dependency install.
+3. Build the Flutter web bundle from a clean dependency install with
+   `flutter build web --release --no-web-resources-cdn`. Dadurch wird CanvasKit
+   lokal unter `canvaskit/` ausgeliefert; ein Release darf für den Renderer
+   keine Google-CDN-Anfrage benötigen.
    When the build is copied from a NAS or other mounted volume, normalise the
    published file modes after transfer: directories need `755`, static files
    need `644`. Never preserve private `700` modes into the web root; Apache
