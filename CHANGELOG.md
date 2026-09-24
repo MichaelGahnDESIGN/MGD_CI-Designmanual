@@ -64,6 +64,8 @@ Alle nennenswerten Änderungen an diesem Projekt werden hier dokumentiert. Das F
 
 - Flutter-Web-Releases bündeln CanvasKit nun verbindlich lokal und verwenden
   keine externe Renderer-CDN mehr
+- der Flutter-Start entfernt frühere Service Worker vollständig, bevor die
+  aktuelle lokale Startdatei geladen wird
 - Interaktionsfeedback verwendet nun den shader-unabhängigen Material-Ripple;
   dadurch bleiben Klickrückmeldungen in Light- und Darkmode sichtbar und die
   Flutter-Webtests laufen ohne GPU-Shader-Abhängigkeit zuverlässig durch
